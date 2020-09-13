@@ -1,0 +1,78 @@
+.wrapper {
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  perspective: 2px;
+}
+.section {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  /* align-items: center; */
+  justify-content: center;
+  color: white;
+  text-shadow: 0 0 5px #000;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transition: background-position 1s;
+}
+
+.section:last-of-type {
+  max-height: 100vh;
+  overflow: hidden;
+}
+.parallax::after {
+  content: " ";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateZ(-1px) scale(1.5);
+  background-size: 100%;
+  z-index: -1;
+}
+
+.static1 {
+  background-image: url("../assets/dirt.jpg");
+}
+
+.static2 {
+  background-image: url("../assets/rating.jpg");
+  background-position-y: center;
+}
+
+.bg1::after {
+  background-image: url("../assets/bullpen.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position-x: right;
+  transition: background-position 1s;
+}
+
+@media only screen and (max-width: 830px) {
+  .bg1::after {
+    background-position: -400px;
+  }
+}
+
+@media only screen and (min-width: 1700px) {
+  .bg2::after {
+    background-position-y: -200px;
+  }
+}
+
+.bg2::after {
+  background-image: url("../assets/magnifying.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position-y: center;
+  transition: background-position 0s;
+}
+
+.bg3::after {
+  background-image: url("../assets/spotify.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  transition: background-position 0s;
+}
