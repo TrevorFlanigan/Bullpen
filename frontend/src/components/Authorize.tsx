@@ -1,7 +1,6 @@
 import * as React from "react";
 import Cookies from "js-cookie";
 import { Redirect } from "react-router";
-import Home from "./AuthorizedApp";
 interface IAuthorizeProps {}
 
 interface IAuthorizeState {}
