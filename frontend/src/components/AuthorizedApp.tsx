@@ -9,6 +9,9 @@ interface IHomeState {}
 
 export default class Home extends React.Component<IHomeProps, IHomeState> {
   public render() {
+    let user = Cookies.get("user") || "{}";
+    console.log(JSON.parse(user));
+
     return (
       <div className="wrapper App">
         <section className="section parallax bg1 flexcolumn">
@@ -24,9 +27,9 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
           </p>
         </section>
         <section className="section parallax bg2 App-subtitle flexcolumn">
-          <h1>Your Suggestions</h1>
+          <h1>You Might've Forgotten</h1>
           <p style={{ marginTop: 0, fontSize: "80%" }}>
-            Here you'll find the next songs that you play on repeat!
+            Show old songs the user used to listen to
           </p>
         </section>
         <section className="section static2 App-subtitle flexcolumn">

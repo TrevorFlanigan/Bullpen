@@ -1,0 +1,31 @@
+Get "you might've forgotten" - show 3 old songs that the user used to listen to. 
+
+i.e. in long term, but not in either medium or short term.
+
+
+how to make sure that my suggestions are new to the user... 
+
+get recommended (from user's genres) -> get the user's recently played tracks (make sure that they don't have the songs in their playlists either) -> show the intersect of the two.
+
+how to store all user's songs -> use song uid string. 
+
+
+
+
+Get the user's favorite genres: Personalization get users top artists or tracks...
+
+top 5 genres of each are the user's favorite (current) genres.
+
+
+Before they were cool...
+
+Get super unpopular artists. 
+
+
+Social aspect: add other users 
+
+Profile: pin favorite songs, show what im listening to rn, 
+
+Playlists: offer user the option to summarize their listening in a playlist named (MonthName YYYY).
+
+Handle a playlist (default name: The Bullpen) named by user, auto update playlist with the songs they've swiped. 

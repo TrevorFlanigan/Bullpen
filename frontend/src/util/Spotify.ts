@@ -8,6 +8,7 @@ let Spotify = {
   //retrieves the user's access token from the Spotify API
   getAccessToken(testLogin?: Boolean) {
     if (accessToken) {
+      this.getUser(accessToken);
       return accessToken;
     } else {
       //gets the access token and expiry time as objects from the spotify link
@@ -23,6 +24,7 @@ let Spotify = {
           Cookies.remove("user");
         }, Number.parseInt(expiresIn) * 1000);
         window.history.pushState("Access Token", "", "/");
+        this.getUser(accessToken);
         return accessToken;
       } else {
         if (testLogin) {
@@ -42,23 +44,26 @@ let Spotify = {
     return false;
   },
 
-  async getUser() {
+  async getUser(accessToken?: String) {
     console.log("Getting user...");
-
-    if (!Cookies.get(accessToken)) {
-      return false;
+    let user = Cookies.get("user");
+    if (user) {
+      return user;
+    }
+    if (!Cookies.get("accessToken")) {
+      return null;
     }
 
     let res = await fetch("https://api.spotify.com/v1/me", {
       method: "get",
       headers: {
-        Authorization: `Bearer ${Spotify.getAccessToken()}`,
+        Authorization: `Bearer ${accessToken || Spotify.getAccessToken()}`,
         "Content-Type": "application/json",
       },
     });
     let json = await res.json();
     Cookies.set("user", json);
-    console.log(json);
+    return json;
   },
 };
 
