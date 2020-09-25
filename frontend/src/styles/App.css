@@ -33,6 +33,36 @@ p {
   font-family: "Kumbh Sans";
 }
 
+.square-box {
+  position: relative;
+  width: 50%;
+  overflow: hidden;
+  background: #4679bd;
+}
+.square-box:before {
+  content: "";
+  display: block;
+  padding-top: 100%;
+}
+.square-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  color: white;
+  text-align: center;
+}
+
+.nohighlight {
+  -moz-user-focus: ignore;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
 /* Fonts */
 
 @font-face {

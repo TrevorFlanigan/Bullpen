@@ -32,6 +32,24 @@ const UserSchema = new mongoose_1.default.Schema({
         type: String,
         required: true,
     },
+    recentlyPlayed: {
+        type: [String],
+    },
+    favoriteArtists: {
+        type: [Object],
+    },
+    favoriteGenres: {
+        type: [Object],
+    },
+    skipped: {
+        type: [Object],
+    },
+    oldFavorites: {
+        type: [Object],
+    },
+    oldFavoritePlaylist: {
+        type: [Object],
+    },
 });
 const User = mongoose_1.default.model("User", UserSchema);
 exports.default = User;

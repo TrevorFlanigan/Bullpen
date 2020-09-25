@@ -17,6 +17,14 @@
   transition: background-position 1s;
 }
 
+.songCard {
+  position: relative;
+  display: flex;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transition: background-position 1s;
+}
+
 .section:last-of-type {
   max-height: 100vh;
   overflow: hidden;
@@ -63,7 +71,7 @@
 }
 
 .bg2::after {
-  background-image: url("../assets/magnifying.jpg");
+  background-image: url("../assets/flames.jpg");
   background-repeat: no-repeat;
   background-size: cover;
   background-position-y: center;

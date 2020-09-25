@@ -32,8 +32,6 @@ export default class Authorize extends React.Component<
         uri: user.uri,
       }),
     });
-
-    console.log("res");
   };
 
   async componentDidMount() {

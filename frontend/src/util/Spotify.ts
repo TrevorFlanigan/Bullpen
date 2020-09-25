@@ -18,10 +18,19 @@ let Spotify = {
         accessToken = accessTokenMatch[1];
         expiresIn = expiresInMatch[1];
         Cookies.set("accessToken", accessToken);
-        window.setTimeout(() => {
+        window.setTimeout(async () => {
+          alert("You are being logged out");
           accessToken = "";
           Cookies.remove("accessToken");
           Cookies.remove("user");
+          const url = "https://www.spotify.com/logout/";
+          const spotifyLogoutWindow = await window.open(
+            url,
+            "Spotify Logout",
+            "width=100,height=100,top=0,left=0"
+          );
+          setTimeout(() => spotifyLogoutWindow?.close(), 1);
+          window.location.reload();
         }, Number.parseInt(expiresIn) * 1000);
         window.history.pushState("Access Token", "", "/");
         this.getUser(accessToken);
@@ -30,7 +39,11 @@ let Spotify = {
         if (testLogin) {
           return false;
         }
-        window.location.href = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&scope=playlist-modify-public&redirect_uri=${redirectURI}`;
+        let scopes =
+          "user-read-private user-top-read playlist-modify-public user-read-recently-played";
+        window.location.href = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&scope=${encodeURIComponent(
+          scopes
+        )}&redirect_uri=${redirectURI}`;
         Cookies.remove("accessToken");
         accessToken = "";
         expiresIn = "";

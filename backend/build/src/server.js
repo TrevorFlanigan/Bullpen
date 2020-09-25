@@ -17,11 +17,13 @@ const body_parser_1 = __importDefault(require("body-parser"));
 const cors_1 = __importDefault(require("cors"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const users_1 = __importDefault(require("./routes/users"));
+const music_1 = __importDefault(require("./routes/music"));
 const app = express_1.default();
 app.use(cors_1.default());
 app.use(body_parser_1.default.json());
 app.get("/", (req, res) => res.send("Express + TypeScript Server"));
 app.use("/api/users", users_1.default);
+app.use("/api/music", music_1.default);
 const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield mongoose_1.default.connect("mongodb://localhost:27017/bullpen", {
