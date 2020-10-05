@@ -15,13 +15,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const User_1 = __importDefault(require("../schemas/User"));
 const node_fetch_1 = __importDefault(require("node-fetch"));
+const mapToSet_1 = __importDefault(require("../mapToSet"));
+const testAccessToken_1 = __importDefault(require("../testAccessToken"));
+const tracks_1 = require("../util/tracks");
 const router = express_1.default.Router();
 /**
  * Returns the set L ∩ (R ∪ S)', where L is the long-term favorites,
  *  R is recents, and S is medium/short-term favorites
+ * @param accessToken spotify accessToken
+ * @param uid user id for current user.
  */
 router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const accessToken = req.query.accessToken;
+    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
+        return;
+    }
     let user = yield User_1.default.findOne({ id: req.query.uid });
     if (!user) {
         res.status(404).json({ error: "User not found" });
@@ -35,27 +43,9 @@ router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, functio
     let recentTrackIds = new Set();
     let longTrackIds = new Set();
     let shortTrackIds = new Set();
-    let longHistory = node_fetch_1.default("https://api.spotify.com/v1/me/top/tracks?time_range=long_term", {
-        method: "get",
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-        },
-    });
-    let shortHistory = node_fetch_1.default("https://api.spotify.com/v1/me/top/tracks?time_range=medium_term", {
-        method: "get",
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-        },
-    });
-    let recentlyPlayed = node_fetch_1.default("https://api.spotify.com/v1/me/player/recently-played", {
-        method: "get",
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-        },
-    });
+    let longHistory = tracks_1.longHistoryTracks(accessToken);
+    let shortHistory = tracks_1.shortHistoryTracks(accessToken);
+    let recentlyPlayed = tracks_1.recentlyPlayedTracks(accessToken);
     let [longRes, shortRes, recentRes] = yield Promise.all([
         longHistory,
         shortHistory,
@@ -66,14 +56,10 @@ router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, functio
         shortRes.json(),
         recentRes.json(),
     ]);
-    if (longJson.error) {
-        res.status(401).json(longJson);
-        return;
-    }
     [longTracks, shortTracks, recentTracks] = yield Promise.all([
-        mapToSet(longJson.items),
-        mapToSet(shortJson.items),
-        mapToSet(recentJson.items),
+        mapToSet_1.default(longJson.items),
+        mapToSet_1.default(shortJson.items),
+        mapToSet_1.default(recentJson.items),
     ]);
     let shortNext = shortJson.next;
     let longNext = longJson.next;
@@ -148,6 +134,8 @@ router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, functio
         res();
     }));
     yield Promise.all([shortPromise, longPromise, recentPromise]);
+    if (user)
+        user.recentlyPlayed = Array.from(recentTracks);
     for (let track of recentTracks) {
         console.log(track.name);
         recentTrackIds.add(track.id);
@@ -176,18 +164,18 @@ router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, functio
 router.get("/test", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.sendStatus(200);
 }));
+/**
+ * Returns the user's recent tracks
+ * @param accessToken spotify accessToken
+ */
 router.get("/recent", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const accessToken = req.query.accessToken;
-    let recentlyPlayed = node_fetch_1.default("https://api.spotify.com/v1/me/player/recently-played?limit=50", {
-        method: "get",
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-        },
-    });
+    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
+        return;
+    }
+    let recentlyPlayed = tracks_1.recentlyPlayedTracks(accessToken);
     let [recentRes] = yield Promise.all([recentlyPlayed]);
     let [recentJson] = yield Promise.all([recentRes.json()]);
-    // console.log(recentJson);
     let recentNext = recentJson.next;
     let recentTracks = new Set();
     let recentPromise = new Promise((res, rej) => __awaiter(void 0, void 0, void 0, function* () {
@@ -222,7 +210,8 @@ router.get("/recent", (req, res) => __awaiter(void 0, void 0, void 0, function* 
 /**
  * Removes the set L ∩ D, L is long term, D is req.body.delete
  *
- * Body: deleteIds: [trackid]. To be removed from L
+ * @param uid user id for current user.
+ * @param {String[] | String} body.deleteIds the ids of the songs to delete from old favorites
  */
 router.delete("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("delete /forgotten");
@@ -272,6 +261,11 @@ router.delete("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, func
     yield Promise.all([promise1, promise2, user.save()]);
     res.status(200).json(final);
 }));
+/**
+ * Gets the old favorites from the Database.
+ *
+ * @param uid user id for current user.
+ */
 router.get("/forgottenDB", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("get forgotten from DB");
     let user = yield User_1.default.findOne({ id: req.query.uid });
@@ -281,6 +275,9 @@ router.get("/forgottenDB", (req, res) => __awaiter(void 0, void 0, void 0, funct
     }
     res.status(404).json(user.oldFavorites);
 }));
+/**
+ *
+ */
 router.post("/addforgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.query);
     let user = yield User_1.default.findOne({ id: req.query.uid });
@@ -297,8 +294,6 @@ router.post("/addforgotten", (req, res) => __awaiter(void 0, void 0, void 0, fun
         return !oldFavoritePlaylistIds.includes(track.id);
     });
     let finalIds = final.map((track) => track.id);
-    console.log(final);
-    console.log(finalIds);
     user.oldFavoritePlaylist = final.concat(oldFavoritePlaylist);
     user.oldFavorites = user.oldFavorites.filter((track) => {
         if (finalIds.includes(track.id)) {
@@ -309,11 +304,21 @@ router.post("/addforgotten", (req, res) => __awaiter(void 0, void 0, void 0, fun
     yield user.save();
     res.status(200).json({ msg: "hello" });
 }));
-const mapToSet = (items) => __awaiter(void 0, void 0, void 0, function* () {
-    let set = new Set();
-    items === null || items === void 0 ? void 0 : items.forEach((item) => {
-        set.add(item.track || item);
-    });
-    return set;
-});
+/**
+ *
+ * Query: uid, accessToken
+ * Body: Name of playlist
+ */
+router.post("/makePlaylist", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const accessToken = req.query.accessToken;
+    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
+        return;
+    }
+    let user = yield User_1.default.findOne({ id: req.query.uid });
+    if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+    }
+    res.sendStatus(200);
+}));
 exports.default = router;

@@ -10,10 +10,31 @@ interface IHomeProps {}
 
 interface IHomeState {}
 
+const testAccessToken = async (accessToken: string) => {
+  let response = await fetch("https://api.spotify.com/v1/me/", {
+    method: "get",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  let json = await response.json();
+
+  if (json.error?.status === 401) {
+    return false;
+  }
+  return true;
+};
+
 export default class Home extends React.Component<IHomeProps, IHomeState> {
   componentDidMount() {
     let interval = setInterval(async () => {
-      if (!Cookies.get("accessToken")) {
+      console.log("testing access token");
+
+      if (!(await testAccessToken(Cookies.get("accessToken") || ""))) {
+        console.log("loggin");
+
         const url = "https://www.spotify.com/logout/";
         const spotifyLogoutWindow = await window.open(
           url,
@@ -21,6 +42,9 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
           "width=700,height=500,top=40,left=40"
         );
         spotifyLogoutWindow?.close();
+        Cookies.remove("accessToken");
+        Cookies.remove("user");
+        window.location.reload();
         clearInterval(interval);
       }
     }, 5000);

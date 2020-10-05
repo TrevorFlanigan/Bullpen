@@ -2,8 +2,14 @@ import mongoose from "mongoose";
 import express from "express";
 import User from "../schemas/User";
 import fetch from "node-fetch";
-// import logger from "../logger";
-import { info } from "console";
+import mapToSet from "../mapToSet";
+import testAccessToken from "../testAccessToken";
+import {
+  longHistoryTracks,
+  shortHistoryTracks,
+  recentlyPlayedTracks,
+} from "../util/tracks";
+import { access } from "fs";
 const router = express.Router();
 interface Track {
   name: string;
@@ -13,9 +19,14 @@ interface Track {
 /**
  * Returns the set L ∩ (R ∪ S)', where L is the long-term favorites,
  *  R is recents, and S is medium/short-term favorites
+ * @param accessToken spotify accessToken
+ * @param uid user id for current user.
  */
 router.get("/forgotten", async (req, res) => {
-  const accessToken = req.query.accessToken;
+  const accessToken = req.query.accessToken as string;
+  if (!(await testAccessToken(accessToken, req, res))) {
+    return;
+  }
   let user = await User.findOne({ id: req.query.uid });
   if (!user) {
     res.status(404).json({ error: "User not found" });
@@ -33,36 +44,9 @@ router.get("/forgotten", async (req, res) => {
   let longTrackIds = new Set<any>();
   let shortTrackIds = new Set<any>();
 
-  let longHistory = fetch(
-    "https://api.spotify.com/v1/me/top/tracks?time_range=long_term",
-    {
-      method: "get",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  let shortHistory = fetch(
-    "https://api.spotify.com/v1/me/top/tracks?time_range=medium_term",
-    {
-      method: "get",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-  let recentlyPlayed = fetch(
-    "https://api.spotify.com/v1/me/player/recently-played",
-    {
-      method: "get",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  let longHistory = longHistoryTracks(accessToken);
+  let shortHistory = shortHistoryTracks(accessToken);
+  let recentlyPlayed = recentlyPlayedTracks(accessToken);
   let [longRes, shortRes, recentRes] = await Promise.all([
     longHistory,
     shortHistory,
@@ -73,12 +57,6 @@ router.get("/forgotten", async (req, res) => {
     shortRes.json(),
     recentRes.json(),
   ]);
-
-  if (longJson.error) {
-    res.status(401).json(longJson);
-    return;
-  }
-
   [longTracks, shortTracks, recentTracks] = await Promise.all([
     mapToSet(longJson.items),
     mapToSet(shortJson.items),
@@ -113,7 +91,6 @@ router.get("/forgotten", async (req, res) => {
     await Promise.all(promises);
     res();
   });
-
   let longPromise = new Promise(async (res, rej) => {
     let promises: [Promise<any>] = [new Promise((res) => res())];
     while (longNext) {
@@ -138,7 +115,6 @@ router.get("/forgotten", async (req, res) => {
     await Promise.all(promises);
     res();
   });
-
   let recentPromise = new Promise(async (res, rej) => {
     let promises: [Promise<any>] = [new Promise((res) => res())];
     while (recentNext) {
@@ -165,9 +141,9 @@ router.get("/forgotten", async (req, res) => {
   });
 
   await Promise.all([shortPromise, longPromise, recentPromise]);
+  if (user) user.recentlyPlayed = Array.from(recentTracks);
   for (let track of recentTracks) {
     console.log(track.name);
-
     recentTrackIds.add(track.id);
   }
 
@@ -202,23 +178,20 @@ router.get("/test", async (req, res) => {
   res.sendStatus(200);
 });
 
+/**
+ * Returns the user's recent tracks
+ * @param accessToken spotify accessToken
+ */
 router.get("/recent", async (req, res) => {
-  const accessToken = req.query.accessToken;
+  const accessToken: string = req.query.accessToken as string;
 
-  let recentlyPlayed = fetch(
-    "https://api.spotify.com/v1/me/player/recently-played?limit=50",
-    {
-      method: "get",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  if (!(await testAccessToken(accessToken, req, res))) {
+    return;
+  }
+
+  let recentlyPlayed = recentlyPlayedTracks(accessToken);
   let [recentRes] = await Promise.all([recentlyPlayed]);
   let [recentJson] = await Promise.all([recentRes.json()]);
-
-  // console.log(recentJson);
 
   let recentNext = recentJson.next;
   let recentTracks = new Set<any>();
@@ -260,7 +233,8 @@ router.get("/recent", async (req, res) => {
 /**
  * Removes the set L ∩ D, L is long term, D is req.body.delete
  *
- * Body: deleteIds: [trackid]. To be removed from L
+ * @param uid user id for current user.
+ * @param {String[] | String} body.deleteIds the ids of the songs to delete from old favorites
  */
 router.delete("/forgotten", async (req, res) => {
   console.log("delete /forgotten");
@@ -318,6 +292,11 @@ router.delete("/forgotten", async (req, res) => {
   res.status(200).json(final);
 });
 
+/**
+ * Gets the old favorites from the Database.
+ *
+ * @param uid user id for current user.
+ */
 router.get("/forgottenDB", async (req, res) => {
   console.log("get forgotten from DB");
 
@@ -330,6 +309,9 @@ router.get("/forgottenDB", async (req, res) => {
   res.status(404).json(user.oldFavorites);
 });
 
+/**
+ *
+ */
 router.post("/addforgotten", async (req, res) => {
   console.log(req.query);
 
@@ -356,10 +338,6 @@ router.post("/addforgotten", async (req, res) => {
 
   let finalIds = final.map((track) => track.id);
 
-  console.log(final);
-
-  console.log(finalIds);
-
   user.oldFavoritePlaylist = final.concat(oldFavoritePlaylist);
   user.oldFavorites = user.oldFavorites.filter((track) => {
     if (finalIds.includes(track.id)) {
@@ -373,11 +351,22 @@ router.post("/addforgotten", async (req, res) => {
   res.status(200).json({ msg: "hello" });
 });
 
-const mapToSet = async (items: [any]) => {
-  let set = new Set();
-  items?.forEach((item: any) => {
-    set.add(item.track || item);
-  });
-  return set;
-};
+/**
+ *
+ * Query: uid, accessToken
+ * Body: Name of playlist
+ */
+router.post("/makePlaylist", async (req, res) => {
+  const accessToken = req.query.accessToken as string;
+  if (!(await testAccessToken(accessToken, req, res))) {
+    return;
+  }
+  let user = await User.findOne({ id: req.query.uid });
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  res.sendStatus(200);
+});
 export default router;

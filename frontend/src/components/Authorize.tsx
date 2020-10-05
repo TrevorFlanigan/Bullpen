@@ -20,24 +20,42 @@ export default class Authorize extends React.Component<
   createUser = async (user: any) => {
     console.log("res");
 
-    const res = await fetch("http://localhost:4000/api/users/createUser", {
-      method: "post",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        display_name: user.display_name,
-        followers: user.followers,
-        href: user.href,
-        id: user.id,
-        images: user.images,
-        uri: user.uri,
-      }),
-    });
+    const res = await fetch(
+      `http://localhost:4000/api/users/createUser?accessToken=${Cookies.get(
+        "accessToken"
+      )}`,
+      {
+        method: "post",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          display_name: user.display_name,
+          followers: user.followers,
+          href: user.href,
+          id: user.id,
+          images: user.images,
+          uri: user.uri,
+        }),
+      }
+    );
+
+    const favorites = await fetch(
+      `http://localhost:4000/api/music/forgotten?accessToken=${Cookies.get(
+        "accessToken"
+      )}`,
+      {
+        method: "get",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
   };
 
   async componentDidMount() {
     let user: string = "";
     let accessTokenMatch = window.location.href.match(/access_token=([^&]*)/);
     let expiresInMatch = window.location.href.match(/expires_in=([^&]*)/);
+
     if (accessTokenMatch && expiresInMatch) {
       let accessToken = accessTokenMatch[1];
       let expiresIn = expiresInMatch[1];
@@ -49,7 +67,7 @@ export default class Authorize extends React.Component<
         accessToken = "";
         Cookies.remove("accessToken");
         Cookies.remove("user");
-      }, Number.parseInt(expiresIn) * 1000);
+      }, Number.parseInt(expiresIn));
       window.history.pushState("Access Token", "", "/");
       if (Cookies.get("user") && Cookies.get("accessToken")) {
         await this.createUser(user);

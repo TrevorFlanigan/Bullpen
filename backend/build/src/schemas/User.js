@@ -33,7 +33,7 @@ const UserSchema = new mongoose_1.default.Schema({
         required: true,
     },
     recentlyPlayed: {
-        type: [String],
+        type: [Object],
     },
     favoriteArtists: {
         type: [Object],
@@ -49,6 +49,20 @@ const UserSchema = new mongoose_1.default.Schema({
     },
     oldFavoritePlaylist: {
         type: [Object],
+    },
+    discoverPlaylistName: {
+        type: String,
+        default: "The Bullpen",
+    },
+    discoverPlaylistId: {
+        type: String,
+    },
+    oldFavoritePlaylistName: {
+        type: String,
+        default: "Old Flames",
+    },
+    oldFavoritePlaylistId: {
+        type: String,
     },
 });
 const User = mongoose_1.default.model("User", UserSchema);
