@@ -25,13 +25,13 @@ const router = express_1.default.Router();
  * @param accessToken Spotify access token
  */
 router.post("/createUser", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("/createUser");
     const accessToken = req.query.accessToken;
     let body = req.body;
     if (!(yield testAccessToken_1.default(accessToken, req, res))) {
         return;
     }
     const user = yield User_1.default.findOne({ uri: body.uri });
-    console.log("/createUser");
     if (user) {
         console.log("user already exists");
         console.log(user);
@@ -254,12 +254,16 @@ router.post("/createUser", (req, res) => __awaiter(void 0, void 0, void 0, funct
             newUser.oldFavorites = final;
             console.log("working Here");
             let newDiscoverPlaylistRes = yield playlists_1.makePlaylist(accessToken, body.id, "The Bullpen");
+            console.log(newDiscoverPlaylistRes);
             let newDiscoverPlaylistJson = yield newDiscoverPlaylistRes.json();
             newUser.discoverPlaylistId = newDiscoverPlaylistJson.id;
+            console.log(body.id);
             let oldFavoriteRes = yield playlists_1.makePlaylist(accessToken, body.id, "Old Flames");
             let oldFavoriteJson = yield oldFavoriteRes.json();
             console.log("working Here");
+            console.log(oldFavoriteJson);
             newUser.oldFavoritePlaylistId = oldFavoriteJson.id;
+            console.log("saving");
             yield newUser.save();
             res.json(body.id);
         }

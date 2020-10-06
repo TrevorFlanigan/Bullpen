@@ -8,18 +8,33 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.makePlaylist = void 0;
+const node_fetch_1 = __importDefault(require("node-fetch"));
 const makePlaylist = (accessToken, uid, name) => __awaiter(void 0, void 0, void 0, function* () {
-    return fetch(`https://api.spotify.com/v1/users/${uid}/playlists`, {
-        method: "post",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-            name: name,
-        }),
-    });
+    console.log("makeglaylist");
+    try {
+        let res = yield node_fetch_1.default(`https://api.spotify.com/v1/users/${uid}/playlists`, {
+            method: "post",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+                name: name,
+            }),
+        });
+        console.log(res);
+        let json = yield res.json();
+        console.log(json);
+        return json;
+    }
+    catch (e) {
+        console.log(e);
+        throw e;
+    }
 });
 exports.makePlaylist = makePlaylist;
