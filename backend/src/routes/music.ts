@@ -8,14 +8,11 @@ import {
   longHistoryTracks,
   shortHistoryTracks,
   recentlyPlayedTracks,
+  mediumHistoryTracks,
 } from "../util/tracks";
-import { access } from "fs";
+import { addToPlaylist, getAllFromNext } from "../util/playlists";
 const router = express.Router();
-interface Track {
-  name: string;
-  id: string;
-  uri: string;
-}
+
 /**
  * Returns the set L ∩ (R ∪ S)', where L is the long-term favorites,
  *  R is recents, and S is medium/short-term favorites
@@ -36,111 +33,57 @@ router.get("/forgotten", async (req, res) => {
   let skippedIds = user.skipped.map((element) => element.id);
   let alreadyAdded = user.oldFavoritePlaylist.map((track) => track.id);
 
-  let recentTracks = new Set<any>();
-  let longTracks = new Set<any>();
-  let shortTracks = new Set<any>();
-
   let recentTrackIds = new Set<any>();
+  let mediumTrackIds = new Set<any>();
   let longTrackIds = new Set<any>();
   let shortTrackIds = new Set<any>();
 
   let longHistory = longHistoryTracks(accessToken);
+  let mediumHistory = mediumHistoryTracks(accessToken);
+
   let shortHistory = shortHistoryTracks(accessToken);
   let recentlyPlayed = recentlyPlayedTracks(accessToken);
-  let [longRes, shortRes, recentRes] = await Promise.all([
+  let [longRes, shortRes, recentRes, mediumRes] = await Promise.all([
     longHistory,
     shortHistory,
     recentlyPlayed,
+    mediumHistory,
   ]);
-  let [longJson, shortJson, recentJson] = await Promise.all([
+  let [longJson, shortJson, recentJson, mediumJson] = await Promise.all([
     longRes.json(),
     shortRes.json(),
     recentRes.json(),
+    mediumRes.json(),
   ]);
-  [longTracks, shortTracks, recentTracks] = await Promise.all([
+
+  let recentTracks = new Set<any>();
+  let longTracks = new Set<any>();
+  let mediumTracks = new Set<any>();
+  let shortTracks = new Set<any>();
+  [longTracks, shortTracks, recentTracks, mediumTracks] = await Promise.all([
     mapToSet(longJson.items),
     mapToSet(shortJson.items),
     mapToSet(recentJson.items),
+    mapToSet(mediumJson.items),
   ]);
 
   let shortNext = shortJson.next;
   let longNext = longJson.next;
   let recentNext = recentJson.next;
+  let mediumNext = mediumJson.next;
 
-  let shortPromise = new Promise(async (res, rej) => {
-    let promises: [Promise<any>] = [new Promise((res) => res())];
-    while (shortNext) {
-      let shortRes = await fetch(shortNext, {
-        method: "get",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-      let shortJson = await shortRes.json();
-      let promise = new Promise((res) => {
-        for (const track of shortJson.items) {
-          shortTracks.add(track);
-        }
-        res();
-      });
+  let shortPromise = getAllFromNext(accessToken, shortNext, shortTracks);
+  let longPromise = getAllFromNext(accessToken, longNext, longTracks);
+  let mediumPromise = getAllFromNext(accessToken, mediumNext, mediumTracks);
+  let recentPromise = getAllFromNext(accessToken, recentNext, recentTracks);
 
-      promises.push(promise);
-      shortNext = shortJson.next;
-    }
-    await Promise.all(promises);
-    res();
-  });
-  let longPromise = new Promise(async (res, rej) => {
-    let promises: [Promise<any>] = [new Promise((res) => res())];
-    while (longNext) {
-      let longRes = await fetch(longNext, {
-        method: "get",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-      let longJson = await longRes.json();
-      let promise = new Promise((res) => {
-        for (const track of longJson.items) {
-          longTracks.add(track);
-        }
-        res();
-      });
+  [shortTracks, longTracks, recentTracks, mediumTracks] = await Promise.all([
+    shortPromise,
+    longPromise,
+    recentPromise,
+    mediumPromise,
+  ]);
 
-      promises.push(promise);
-      longNext = longJson.next;
-    }
-    await Promise.all(promises);
-    res();
-  });
-  let recentPromise = new Promise(async (res, rej) => {
-    let promises: [Promise<any>] = [new Promise((res) => res())];
-    while (recentNext) {
-      let recentRes = await fetch(recentNext, {
-        method: "get",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-      let recentJson = await recentRes.json();
-      let promise = new Promise((res) => {
-        for (const track of recentJson.items) {
-          recentTracks.add(track.track);
-        }
-        res();
-      });
-
-      promises.push(promise);
-      recentNext = recentJson.next;
-    }
-    await Promise.all(promises);
-    res();
-  });
-
-  await Promise.all([shortPromise, longPromise, recentPromise]);
   if (user) user.recentlyPlayed = Array.from(recentTracks);
   for (let track of recentTracks) {
     console.log(track.name);
@@ -163,7 +106,21 @@ router.get("/forgotten", async (req, res) => {
     }
   }
 
+  for (let track of mediumTracks) {
+    if (
+      shortTrackIds.has(track.id) ||
+      recentTrackIds.has(track.id) ||
+      skippedIds.includes(track.id) ||
+      alreadyAdded.includes(track.id)
+    ) {
+      console.log("removed medium track: " + track.name);
+      mediumTracks.delete(track);
+    }
+  }
+
   let final = Array.from(longTracks.values());
+
+  if (!final.length) final = Array.from(mediumTracks.values());
   if (user) user.oldFavorites = final;
 
   await user.save();
@@ -306,7 +263,7 @@ router.get("/forgottenDB", async (req, res) => {
     return;
   }
 
-  res.status(404).json(user.oldFavorites);
+  res.status(200).json(user.oldFavorites);
 });
 
 /**
@@ -314,6 +271,11 @@ router.get("/forgottenDB", async (req, res) => {
  */
 router.post("/addforgotten", async (req, res) => {
   console.log(req.query);
+  const accessToken: string = req.query.accessToken as string;
+
+  if (!(await testAccessToken(accessToken, req, res))) {
+    return;
+  }
 
   let user = await User.findOne({ id: req.query.uid });
   if (!user) {
@@ -346,6 +308,8 @@ router.post("/addforgotten", async (req, res) => {
     return !finalIds.includes(track.id);
   });
 
+  let songUris = final.map((track) => track.uri);
+  addToPlaylist(accessToken, user.oldFavoritePlaylistId, songUris);
   await user.save();
 
   res.status(200).json({ msg: "hello" });

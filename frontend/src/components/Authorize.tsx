@@ -44,8 +44,10 @@ export default class Authorize extends React.Component<
         }
       );
 
+      console.log("Getting old flames");
+
       await fetch(
-        `http://localhost:4000/api/music/forgotten?accessToken=${accessToken}`,
+        `http://localhost:4000/api/music/forgotten?accessToken=${accessToken}&uid=${user.id}`,
         {
           method: "get",
           headers: {

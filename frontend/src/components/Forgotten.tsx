@@ -47,8 +47,27 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     );
 
     let json = await res.json();
+
     this.setState(() => ({ tracks: json }));
-    console.log(json[0]);
+    if (json.length == 0) {
+      console.log("Getting medium term instead");
+
+      let res = await fetch(
+        `http://localhost:4000/api/music/forgotten?uid=${
+          user.id
+        }&accessToken=${Cookies.get("accessToken")}`,
+        {
+          method: "get",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log(res);
+
+      json = await res.json();
+      this.setState({ tracks: json });
+    }
 
     return json;
   };
@@ -102,7 +121,9 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     this.incrementIndex(index);
 
     let res = await fetch(
-      `http://localhost:4000/api/music/addforgotten?uid=${user.id}`,
+      `http://localhost:4000/api/music/addforgotten?uid=${
+        user.id
+      }&accessToken=${Cookies.get("accessToken")}`,
       {
         method: "post",
         headers: {
@@ -123,7 +144,11 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     let width = this.props.width;
     let big = isWidthUp("xl", width);
     let large = isWidthUp("lg", width);
-    if (!this.state.tracks.length)
+    if (
+      !this.state.tracks.length ||
+      Math.min(this.state.index, this.state.index1, this.state.index2) >=
+        this.state.tracks.length
+    )
       return (
         <section
           className="section parallax bg2 App-subtitle flexcolumn App-subtitle"

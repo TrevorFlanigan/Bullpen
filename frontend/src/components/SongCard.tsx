@@ -112,13 +112,18 @@ export default class SongCard extends React.Component<
           <div>
             <RemoveButton
               onClick={(e: any) => {
-                this.setState({ color: "red", opacity: 0 });
+                this.setState({ color: "red", opacity: 0, disabled: true });
 
                 setTimeout(() => {
                   this.props.remove(this.props.track.id);
-                  this.setState({ color: "white", opacity: 1 });
+                  this.setState({
+                    color: "white",
+                    opacity: 1,
+                    disabled: false,
+                  });
                 }, 500);
               }}
+              disabled={this.state.disabled}
             >
               <Remove />
             </RemoveButton>
@@ -141,17 +146,18 @@ export default class SongCard extends React.Component<
           <div>
             <HeartButton
               onClick={(e: any) => {
-                this.setState({ color: "green", opacity: 0, disabled: false });
+                this.setState({ color: "green", opacity: 0, disabled: true });
 
                 setTimeout(() => {
                   this.props.heart(this.props.track.id);
                   this.setState({
                     color: "white",
                     opacity: 1,
-                    disabled: true,
+                    disabled: false,
                   });
                 }, 500);
               }}
+              disabled={this.state.disabled}
             >
               <Favorite />
             </HeartButton>
