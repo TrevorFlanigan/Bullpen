@@ -30,8 +30,6 @@ const testAccessToken = async (accessToken: string) => {
 export default class Home extends React.Component<IHomeProps, IHomeState> {
   componentDidMount() {
     let interval = setInterval(async () => {
-      console.log("testing access token");
-
       if (!(await testAccessToken(Cookies.get("accessToken") || ""))) {
         console.log("loggin");
 

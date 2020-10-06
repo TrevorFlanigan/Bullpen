@@ -17,42 +17,8 @@ export default class Authorize extends React.Component<
     redirect: Cookies.get("user") && Cookies.get("accessToken") ? true : false,
   };
 
-  createUser = async (user: any) => {
-    console.log("res");
-
-    const res = await fetch(
-      `http://localhost:4000/api/users/createUser?accessToken=${Cookies.get(
-        "accessToken"
-      )}`,
-      {
-        method: "post",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          display_name: user.display_name,
-          followers: user.followers,
-          href: user.href,
-          id: user.id,
-          images: user.images,
-          uri: user.uri,
-        }),
-      }
-    );
-
-    const favorites = await fetch(
-      `http://localhost:4000/api/music/forgotten?accessToken=${Cookies.get(
-        "accessToken"
-      )}`,
-      {
-        method: "get",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  };
-
   async componentDidMount() {
-    let user: string = "";
+    let user: any = {};
     let accessTokenMatch = window.location.href.match(/access_token=([^&]*)/);
     let expiresInMatch = window.location.href.match(/expires_in=([^&]*)/);
 
@@ -61,7 +27,32 @@ export default class Authorize extends React.Component<
       let expiresIn = expiresInMatch[1];
       Cookies.set("accessToken", accessToken);
       user = await Spotify.getUser(accessToken);
-      console.log(user);
+
+      await fetch(
+        `http://localhost:4000/api/users/createUser?accessToken=${accessToken}`,
+        {
+          method: "post",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            display_name: user.display_name,
+            followers: user.followers,
+            href: user.href,
+            id: user.id,
+            images: user.images,
+            uri: user.uri,
+          }),
+        }
+      );
+
+      await fetch(
+        `http://localhost:4000/api/music/forgotten?accessToken=${accessToken}`,
+        {
+          method: "get",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       window.setTimeout(() => {
         accessToken = "";
@@ -70,17 +61,27 @@ export default class Authorize extends React.Component<
       }, Number.parseInt(expiresIn));
       window.history.pushState("Access Token", "", "/");
       if (Cookies.get("user") && Cookies.get("accessToken")) {
-        await this.createUser(user);
         window.location.reload();
       }
     }
   }
   public render() {
     return (
-      <section className="section parallax bg1 flexcolumn">
+      <section
+        className="section parallax bg1 flexcolumn"
+        style={{ placeItems: "center" }}
+      >
         {this.state.redirect && <Redirect to="/" />}
         <h1 className="App-title">Authorizing...</h1>
-        <CircularProgress />
+        <div
+          style={{
+            display: "flex",
+            placeItems: "center",
+            placeContent: "center",
+          }}
+        >
+          <CircularProgress />
+        </div>
       </section>
     );
   }

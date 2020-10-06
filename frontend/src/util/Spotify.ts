@@ -59,7 +59,7 @@ let Spotify = {
 
   async getUser(accessToken?: String) {
     console.log("Getting user...");
-    let user = Cookies.get("user");
+    let user = Cookies.get("user") as any;
     if (user) {
       return user;
     }

@@ -1,6 +1,7 @@
 import * as React from "react";
 import {
   Backdrop,
+  Button,
   Icon,
   Paper,
   TextField,
@@ -9,10 +10,13 @@ import {
 import { Search } from "@material-ui/icons";
 import SettingTextInput from "./SettingTextInput";
 import Cookies from "js-cookie";
-interface ISettingsPageProps {}
+interface ISettingsPageProps {
+  toggleSettings: Function;
+}
 
 interface ISettingsPageState {
   discoverName: string;
+  oldName: string;
 }
 
 const SettingsTab = withStyles({
@@ -42,22 +46,70 @@ export default class SettingsPage extends React.Component<
 > {
   state = {
     discoverName: "",
+    oldName: "",
   };
-  async componentDidMount() {
-    let user = JSON.parse(Cookies.get("user") || "");
-    let res = await fetch(
-      `http://localhost:4000/api/users/discoverPlaylistName?uid=${user.id}`,
+
+  enter = (e: React.KeyboardEvent<Element>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      this.updateSettings();
+    }
+  };
+
+  updatePlaylist = (
+    id: string,
+    name: string,
+    accessToken: string,
+    which: string
+  ) => {
+    return fetch(
+      `http://localhost:4000/api/users/playlistName?uid=${id}&playlist=${which}&playlistName=${name}&accessToken=${accessToken}`,
       {
-        method: "get",
+        method: "put",
         headers: {
           "Content-Type": "application/json",
         },
       }
     );
+  };
 
-    let json = await res.json();
-    console.log(json.name);
-    this.setState({ discoverName: json.name });
+  updateSettings = async () => {
+    const { id } = JSON.parse(Cookies.get("user") as string);
+
+    const accessToken = Cookies.get("accessToken") as string;
+
+    let oldPromise = this.updatePlaylist(
+      id,
+      this.state.oldName,
+      accessToken,
+      "old"
+    );
+    let discoverPromise = this.updatePlaylist(
+      id,
+      this.state.discoverName,
+      accessToken,
+      "discover"
+    );
+
+    this.props.toggleSettings();
+  };
+  async componentDidMount() {
+    let user = JSON.parse(Cookies.get("user") || "");
+    let accessToken = Cookies.get("accessToken");
+    let discover = await (
+      await fetch(
+        `http://localhost:4000/api/users/playlistName?uid=${user.id}&playlist=discover&accessToken=${accessToken}`
+      )
+    ).json();
+    let old = await (
+      await fetch(
+        `http://localhost:4000/api/users/playlistName?uid=${user.id}&playlist=old&accessToken=${accessToken}`
+      )
+    ).json();
+    this.setState({
+      discoverName: discover.name || "Discover Playlist",
+      oldName: old.name || "Old Flames",
+    });
   }
 
   public render() {
@@ -99,14 +151,41 @@ export default class SettingsPage extends React.Component<
                 alignItems: "center",
               }}
             >
-              <SettingTextInput
-                onChange={(e) =>
-                  this.setState({ discoverName: e.target.value })
-                }
-                icon={SearchIcon}
-                value={this.state.discoverName}
-                label="Discover Playlist Name"
-              />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  flexGrow: 1,
+                }}
+              >
+                <SettingTextInput
+                  onChange={(e) =>
+                    this.setState({ discoverName: e.target.value })
+                  }
+                  onKeyDown={this.enter}
+                  icon={SearchIcon}
+                  value={this.state.discoverName}
+                  label="Discover Playlist Name"
+                />
+                <SettingTextInput
+                  onChange={(e) => this.setState({ oldName: e.target.value })}
+                  onKeyDown={this.enter}
+                  icon={SearchIcon}
+                  value={this.state.oldName}
+                  label="Old Favorites Playlist Name"
+                />
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignSelf: "center",
+                  marginBottom: "10px",
+                }}
+              >
+                <Button variant="contained" onClick={this.updateSettings}>
+                  Save
+                </Button>
+              </div>
             </div>
           </div>
         </SettingsTab>

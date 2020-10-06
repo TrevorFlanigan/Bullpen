@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.makePlaylist = void 0;
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const makePlaylist = (accessToken, uid, name) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("makeglaylist");
+    console.log("makePlaylist");
     try {
         let res = yield node_fetch_1.default(`https://api.spotify.com/v1/users/${uid}/playlists`, {
             method: "post",
@@ -27,9 +27,8 @@ const makePlaylist = (accessToken, uid, name) => __awaiter(void 0, void 0, void 
                 name: name,
             }),
         });
-        console.log(res);
         let json = yield res.json();
-        console.log(json);
+        console.log("done");
         return json;
     }
     catch (e) {

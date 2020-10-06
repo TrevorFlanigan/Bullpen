@@ -40,7 +40,6 @@ class Profile extends React.Component<IProfileProps, IProfileState> {
 
   toggleSettings = async () => {
     this.setState({ in: !this.state.in });
-    console.log(this.state.in);
   };
   public render() {
     const { classes } = this.props;
@@ -86,7 +85,7 @@ class Profile extends React.Component<IProfileProps, IProfileState> {
           }}
         >
           <Slide in={this.state.in} direction="up">
-            <SettingsPage />
+            <SettingsPage toggleSettings={this.toggleSettings} />
           </Slide>
         </Modal>
       </section>

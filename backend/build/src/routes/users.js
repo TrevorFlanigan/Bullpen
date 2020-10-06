@@ -34,7 +34,6 @@ router.post("/createUser", (req, res) => __awaiter(void 0, void 0, void 0, funct
     const user = yield User_1.default.findOne({ uri: body.uri });
     if (user) {
         console.log("user already exists");
-        console.log(user);
         res.status(302).send("User already exists");
         return;
     }
@@ -246,24 +245,17 @@ router.post("/createUser", (req, res) => __awaiter(void 0, void 0, void 0, funct
                     recentTrackIds.has(track.id) ||
                     skippedIds.includes(track.id) ||
                     alreadyAdded.includes(track.id)) {
-                    console.log("removed track: " + track.name);
+                    // console.log("removed track: " + track.name);
                     longTracks.delete(track);
                 }
             }
             let final = Array.from(longTracks.values());
             newUser.oldFavorites = final;
-            console.log("working Here");
-            let newDiscoverPlaylistRes = yield playlists_1.makePlaylist(accessToken, body.id, "The Bullpen");
-            console.log(newDiscoverPlaylistRes);
-            let newDiscoverPlaylistJson = yield newDiscoverPlaylistRes.json();
+            let newDiscoverPlaylistJson = yield playlists_1.makePlaylist(accessToken, body.id, "The Bullpen");
             newUser.discoverPlaylistId = newDiscoverPlaylistJson.id;
             console.log(body.id);
-            let oldFavoriteRes = yield playlists_1.makePlaylist(accessToken, body.id, "Old Flames");
-            let oldFavoriteJson = yield oldFavoriteRes.json();
-            console.log("working Here");
-            console.log(oldFavoriteJson);
+            let oldFavoriteJson = yield playlists_1.makePlaylist(accessToken, body.id, "Old Flames");
             newUser.oldFavoritePlaylistId = oldFavoriteJson.id;
-            console.log("saving");
             yield newUser.save();
             res.json(body.id);
         }
@@ -358,34 +350,81 @@ router.get("/artists", (req, res) => __awaiter(void 0, void 0, void 0, function*
 }));
 /**
  * @param uid user id for current user.
+ * @param {"discover | old"} playlist
  */
-router.get("/discoverPlaylistName", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let userID = req.query.uid;
+    let playlist = req.query.playlist;
     let user = yield User_1.default.findOne({ id: userID });
     if (!user) {
         res.sendStatus(404);
         return;
     }
-    let discoverPlaylistName = user.discoverPlaylistName;
-    res.status(200).json({ name: discoverPlaylistName });
+    if (playlist == "old") {
+        res.status(200).json({ name: user.oldFavoritePlaylistName });
+        return;
+    }
+    else if (playlist == "discover") {
+        res.status(200).json({ name: user.discoverPlaylistName });
+        return;
+    }
+    else {
+        return res.status(404).json({ message: "invalid playlist option" });
+    }
 }));
 /**
  * @param playlistName name to rename discoverPlaylistName to
+ * @param {"discover | old"} playlist playlist to rename
  * @param uid user id for current user.
  */
-router.put("/discoverPlaylistName", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    let userID = req.query.uid;
-    let user = yield User_1.default.findOne({ id: userID });
+router.put("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("put /playlistName");
+    const accessToken = req.query.accessToken;
+    let body = req.body;
+    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
+        return;
+    }
+    const user = yield User_1.default.findOne({ uri: body.uri });
     if (!user) {
         res.sendStatus(404);
         return;
     }
-    if (!req.query.playlistName) {
+    if (!req.query.playlistName || !req.query.playlist) {
         res.sendStatus(400);
         return;
     }
-    user.discoverPlaylistName = req.query.playlistName;
-    res.sendStatus(200);
+    const { playlist } = req.query;
+    console.log(playlist);
+    const newName = req.query.playlistName;
+    let id = "";
+    if (playlist == "old") {
+        id = user.oldFavoritePlaylistId;
+    }
+    else if (playlist == "discover") {
+        id = user.discoverPlaylistId;
+    }
+    else {
+        return res.status(404).json({ message: "invalid playlist option" });
+    }
+    let result = yield node_fetch_1.default(`https://api.spotify.com/v1/playlists/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+            name: newName,
+        }),
+    });
+    if (result.status === 200) {
+        if (playlist == "old") {
+            user.oldFavoritePlaylistName = newName;
+        }
+        else if (playlist == "discover") {
+            user.discoverPlaylistName = newName;
+        }
+    }
+    res.sendStatus(result.status);
 }));
 const getGenres = (artists) => __awaiter(void 0, void 0, void 0, function* () {
     let genres = new Map();

@@ -31,7 +31,6 @@ router.post("/createUser", async (req, res) => {
 
   if (user) {
     console.log("user already exists");
-    console.log(user);
     res.status(302).send("User already exists");
     return;
   } else {
@@ -259,7 +258,7 @@ router.post("/createUser", async (req, res) => {
           skippedIds.includes(track.id) ||
           alreadyAdded.includes(track.id)
         ) {
-          console.log("removed track: " + track.name);
+          // console.log("removed track: " + track.name);
           longTracks.delete(track);
         }
       }
@@ -267,32 +266,23 @@ router.post("/createUser", async (req, res) => {
       let final = Array.from(longTracks.values());
       newUser.oldFavorites = final;
 
-      console.log("working Here");
-
-      let newDiscoverPlaylistRes = await makePlaylist(
+      let newDiscoverPlaylistJson = await makePlaylist(
         accessToken,
         body.id,
         "The Bullpen"
       );
-      console.log(newDiscoverPlaylistRes);
 
-      let newDiscoverPlaylistJson = await newDiscoverPlaylistRes.json();
       newUser.discoverPlaylistId = newDiscoverPlaylistJson.id;
 
       console.log(body.id);
 
-      let oldFavoriteRes = await makePlaylist(
+      let oldFavoriteJson = await makePlaylist(
         accessToken,
         body.id,
         "Old Flames"
       );
-      let oldFavoriteJson = await oldFavoriteRes.json();
-      console.log("working Here");
-      console.log(oldFavoriteJson);
-
 
       newUser.oldFavoritePlaylistId = oldFavoriteJson.id;
-      console.log("saving");
 
       await newUser.save();
       res.json(body.id);
@@ -406,41 +396,134 @@ router.get("/artists", async (req, res) => {
 
 /**
  * @param uid user id for current user.
+ * @param {"discover | old"} playlist
  */
-router.get("/discoverPlaylistName", async (req, res) => {
+router.get("/playlistName", async (req, res) => {
   let userID = req.query.uid;
+  let playlist = req.query.playlist;
   let user = await User.findOne({ id: userID });
 
+  const accessToken: string = req.query.accessToken as string;
+
+  if (!(await testAccessToken(accessToken, req, res))) {
+    console.log("no accessToken");
+    return;
+  }
   if (!user) {
     res.sendStatus(404);
     return;
   }
+  if (playlist == "old") {
+    res.status(200).json({ name: user.oldFavoritePlaylistName });
 
-  let discoverPlaylistName = user.discoverPlaylistName;
+    let response = await fetch(
+      `https://api.spotify.com/v1/playlists/${user.oldFavoritePlaylistId}?fields=name`,
+      {
+        method: "get",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    let json = await response.json();
+    if (user.oldFavoritePlaylistName !== json.name) {
+      user.oldFavoritePlaylistName = json.name;
+      await user.save();
+    }
+    return;
+  } else if (playlist == "discover") {
+    res.status(200).json({ name: user.discoverPlaylistName });
 
-  res.status(200).json({ name: discoverPlaylistName });
+    let response = await fetch(
+      `https://api.spotify.com/v1/playlists/${user.discoverPlaylistId}?fields=name`,
+      {
+        method: "get",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    let json = await response.json();
+    if (user.discoverPlaylistName !== json.name) {
+      user.discoverPlaylistName = json.name;
+      await user.save();
+    }
+    return;
+  } else {
+    return res.status(404).json({ message: "invalid playlist option" });
+  }
 });
 
 /**
  * @param playlistName name to rename discoverPlaylistName to
+ * @param {"discover | old"} playlist playlist to rename
  * @param uid user id for current user.
  */
-router.put("/discoverPlaylistName", async (req, res) => {
-  let userID = req.query.uid;
-  let user = await User.findOne({ id: userID });
+router.put("/playlistName", async (req, res) => {
+  console.log("put /playlistName");
+
+  const accessToken: string = req.query.accessToken as string;
+  console.log(accessToken);
+
+  let body = req.body;
+
+  if (!(await testAccessToken(accessToken, req, res))) {
+    console.log("no accessToken");
+    return;
+  }
+
+  const user = await User.findOne({ uid: body.uid });
 
   if (!user) {
+    console.log("No User");
     res.sendStatus(404);
     return;
   }
 
-  if (!req.query.playlistName) {
+  if (!req.query.playlistName || !req.query.playlist) {
+    console.log("No playlist or playlistname");
+
     res.sendStatus(400);
     return;
   }
-  user.discoverPlaylistName = req.query.playlistName as string;
+  const { playlist } = req.query;
+  console.log(playlist);
 
-  res.sendStatus(200);
+  const newName = req.query.playlistName;
+  let id = "";
+  if (playlist == "old") {
+    id = user.oldFavoritePlaylistId;
+  } else if (playlist == "discover") {
+    id = user.discoverPlaylistId;
+  } else {
+    return res.status(404).json({ message: "invalid playlist option" });
+  }
+
+  let result = await fetch(`https://api.spotify.com/v1/playlists/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      name: newName,
+    }),
+  });
+
+  console.log(result.status);
+
+  if (result.status === 200) {
+    if (playlist == "old") {
+      user.oldFavoritePlaylistName = newName as string;
+    } else if (playlist == "discover") {
+      user.discoverPlaylistName = newName as string;
+    }
+  }
+
+  await user.save();
+  res.sendStatus(result.status);
 });
 
 const getGenres = async (artists: any[]) => {

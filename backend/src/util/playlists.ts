@@ -1,6 +1,6 @@
-import fetch from "node-fetch"
+import fetch from "node-fetch";
 const makePlaylist = async (accessToken: string, uid: string, name: string) => {
-  console.log("makeglaylist");
+  console.log("makePlaylist");
 
   try {
     let res = await fetch(`https://api.spotify.com/v1/users/${uid}/playlists`, {
@@ -13,20 +13,17 @@ const makePlaylist = async (accessToken: string, uid: string, name: string) => {
         name: name,
       }),
     });
-    console.log(res);
 
     let json = await res.json();
-    console.log(json);
+
+    console.log("done");
 
     return json;
-  }
-  catch (e) {
+  } catch (e) {
     console.log(e);
 
     throw e;
-
   }
-
 };
 
 export { makePlaylist };

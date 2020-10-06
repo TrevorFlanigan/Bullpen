@@ -7,6 +7,7 @@ interface ISettingTextInputProps {
   onChange: (
     event: ChangeEvent<HTMLTextAreaElement | HTMLInputElement>
   ) => void;
+  onKeyDown: (event: React.KeyboardEvent<Element>) => void;
 }
 
 interface ISettingTextInputState {}
@@ -17,7 +18,14 @@ export default class SettingTextInput extends React.Component<
 > {
   public render() {
     return (
-      <div style={{ display: "flex", flexDirection: "row" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          marginBottom: "5px",
+          marginTop: "5px",
+        }}
+      >
         <div
           style={{
             height: "100%",
@@ -39,6 +47,7 @@ export default class SettingTextInput extends React.Component<
             label={this.props.label}
             value={this.props.value}
             onChange={this.props.onChange}
+            onKeyDown={this.props.onKeyDown}
           />
         </div>
       </div>
