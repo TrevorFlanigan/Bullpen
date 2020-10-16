@@ -20,6 +20,7 @@ const mapToSet_1 = __importDefault(require("../mapToSet"));
 const tracks_1 = require("../util/tracks");
 const artists_1 = require("../util/artists");
 const playlists_1 = require("../util/playlists");
+const spotify_1 = require("../util/spotify");
 const router = express_1.default.Router();
 /**
  * @param accessToken Spotify access token
@@ -356,16 +357,45 @@ router.get("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, func
     let userID = req.query.uid;
     let playlist = req.query.playlist;
     let user = yield User_1.default.findOne({ id: userID });
+    const accessToken = req.query.accessToken;
+    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
+        console.log("no accessToken");
+        return;
+    }
     if (!user) {
         res.sendStatus(404);
         return;
     }
     if (playlist == "old") {
         res.status(200).json({ name: user.oldFavoritePlaylistName });
+        let response = yield node_fetch_1.default(`https://api.spotify.com/v1/playlists/${user.oldFavoritePlaylistId}?fields=name`, {
+            method: "get",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+        let json = yield response.json();
+        if (user.oldFavoritePlaylistName !== json.name) {
+            user.oldFavoritePlaylistName = json.name;
+            yield user.save();
+        }
         return;
     }
     else if (playlist == "discover") {
         res.status(200).json({ name: user.discoverPlaylistName });
+        let response = yield node_fetch_1.default(`https://api.spotify.com/v1/playlists/${user.discoverPlaylistId}?fields=name`, {
+            method: "get",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+        let json = yield response.json();
+        if (user.discoverPlaylistName !== json.name) {
+            user.discoverPlaylistName = json.name;
+            yield user.save();
+        }
         return;
     }
     else {
@@ -380,16 +410,20 @@ router.get("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, func
 router.put("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("put /playlistName");
     const accessToken = req.query.accessToken;
+    console.log(accessToken);
     let body = req.body;
     if (!(yield testAccessToken_1.default(accessToken, req, res))) {
+        console.log("no accessToken");
         return;
     }
-    const user = yield User_1.default.findOne({ uri: body.uri });
+    const user = yield User_1.default.findOne({ uid: body.uid });
     if (!user) {
+        console.log("No User");
         res.sendStatus(404);
         return;
     }
     if (!req.query.playlistName || !req.query.playlist) {
+        console.log("No playlist or playlistname");
         res.sendStatus(400);
         return;
     }
@@ -416,6 +450,7 @@ router.put("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, func
             name: newName,
         }),
     });
+    console.log(result.status);
     if (result.status === 200) {
         if (playlist == "old") {
             user.oldFavoritePlaylistName = newName;
@@ -424,7 +459,13 @@ router.put("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, func
             user.discoverPlaylistName = newName;
         }
     }
+    yield user.save();
     res.sendStatus(result.status);
+}));
+router.get("/token", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("/token");
+    spotify_1.requestToken();
+    res.sendStatus(200);
 }));
 const getGenres = (artists) => __awaiter(void 0, void 0, void 0, function* () {
     let genres = new Map();

@@ -21,15 +21,24 @@ export default class Authorize extends React.Component<
     let user: any = {};
     let accessTokenMatch = window.location.href.match(/access_token=([^&]*)/);
     let expiresInMatch = window.location.href.match(/expires_in=([^&]*)/);
+    let stateMatch = window.location.href.match(/state=([^&]*)/);
+    let codeMatch = window.location.href.match(/code=([^&]*)/);
 
-    if (accessTokenMatch && expiresInMatch) {
-      let accessToken = accessTokenMatch[1];
-      let expiresIn = expiresInMatch[1];
-      Cookies.set("accessToken", accessToken);
-      user = await Spotify.getUser(accessToken);
+    if (!stateMatch || !codeMatch) return
+
+    let userInfoRes = await fetch(`http://localhost:4000/api/users/token?code=${codeMatch[1]}&state=${stateMatch[1]}`);
+    console.log(stateMatch);
+    
+    let userInfo = await userInfoRes.json();
+    let {access_token, expires_in} = userInfo;
+    if (access_token && expires_in) {
+    //   let accessToken = accessTokenMatch[1];
+    //   let expiresIn = expiresInMatch[1];
+      Cookies.set("accessToken", access_token);
+      user = await Spotify.getUser(access_token);
 
       await fetch(
-        `http://localhost:4000/api/users/createUser?accessToken=${accessToken}`,
+        `http://localhost:4000/api/users/createUser?accessToken=${access_token}`,
         {
           method: "post",
           headers: { "Content-Type": "application/json" },
@@ -47,7 +56,7 @@ export default class Authorize extends React.Component<
       console.log("Getting old flames");
 
       await fetch(
-        `http://localhost:4000/api/music/forgotten?accessToken=${accessToken}&uid=${user.id}`,
+        `http://localhost:4000/api/music/forgotten?accessToken=${access_token}&uid=${user.id}`,
         {
           method: "get",
           headers: {
@@ -57,10 +66,10 @@ export default class Authorize extends React.Component<
       );
 
       window.setTimeout(() => {
-        accessToken = "";
+        access_token = "";
         Cookies.remove("accessToken");
         Cookies.remove("user");
-      }, Number.parseInt(expiresIn));
+      }, Number.parseInt(expires_in) * 1000);
       window.history.pushState("Access Token", "", "/");
       if (Cookies.get("user") && Cookies.get("accessToken")) {
         window.location.reload();

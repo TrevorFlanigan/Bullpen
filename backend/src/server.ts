@@ -4,6 +4,9 @@ import cors from "cors";
 import mongoose from "mongoose";
 import users from "./routes/users";
 import music from "./routes/music";
+import dotenv from "dotenv";
+
+dotenv.config();
 const app = express();
 
 app.use(cors());

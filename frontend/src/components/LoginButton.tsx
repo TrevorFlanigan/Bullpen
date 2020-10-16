@@ -35,12 +35,19 @@ export default class LoginButton extends React.Component<
   public render() {
     return (
       <SpotifyLoginButton
-        onClick={() => {
-          const accessToken: string = Spotify.getAccessToken() || "";
-          if (accessToken) {
-            Cookies.set("accessToken", accessToken);
-            window.location.reload();
-          }
+        onClick={async () => {
+          // const accessToken: string = Spotify.getAccessToken() || "";
+          // if (accessToken) {
+          //   Cookies.set("accessToken", accessToken);
+          //   window.location.reload();
+          // }
+
+          let res = await fetch("http://localhost:4000/api/users/startToken");
+          // let json = await res.json();
+          // console.log(json);
+          
+          let redirect = (await res.json()).url;
+          window.location.href = redirect;
         }}
       >
         Login

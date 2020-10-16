@@ -29,3 +29,5 @@ Profile: pin favorite songs, show what im listening to rn,
 Playlists: offer user the option to summarize their listening in a playlist named (MonthName YYYY).
 
 Handle a playlist (default name: The Bullpen) named by user, auto update playlist with the songs they've swiped. 
+
+Get suggestions like spotify features samples.

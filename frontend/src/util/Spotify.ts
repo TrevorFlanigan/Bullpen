@@ -14,6 +14,10 @@ let Spotify = {
       //gets the access token and expiry time as objects from the spotify link
       let accessTokenMatch = window.location.href.match(/access_token=([^&]*)/);
       let expiresInMatch = window.location.href.match(/expires_in=([^&]*)/);
+      let refreshTokenMatch = window.location.href.match(/refresh_token=([^&]*)/);
+      console.log("refreshTokenMatch");      
+      console.log(refreshTokenMatch);
+      
       if (accessTokenMatch && expiresInMatch) {
         accessToken = accessTokenMatch[1];
         expiresIn = expiresInMatch[1];

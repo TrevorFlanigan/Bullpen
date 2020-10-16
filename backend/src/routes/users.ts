@@ -10,8 +10,10 @@ import {
   shortHistoryTracks,
 } from "../util/tracks";
 import { getLongHistoryArtists, getShortHistoryArtists } from "../util/artists";
-import { json } from "body-parser";
 import { makePlaylist } from "../util/playlists";
+import { getLoginUrl, refreshAccessToken} from "../util/spotify";
+import Transaction from "../schemas/Transaction";
+import {v4 as uuidv4} from "uuid";
 const router = express.Router();
 
 /**
@@ -525,6 +527,68 @@ router.put("/playlistName", async (req, res) => {
   await user.save();
   res.sendStatus(result.status);
 });
+
+router.get("/token", async (req, res) => {
+  console.log("token");
+  let code = req.query.code;
+  let state = req.query.state;
+  let b64 = Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`).toString("base64");
+  console.log(b64);
+  
+  let body = `grant_type=authorization_code&code=${code}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI as string)}`;
+  let response =  await fetch("https://accounts.spotify.com/api/token", {
+    method: "post",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${b64}`
+    },
+    body: body
+  });
+
+  console.log(process.env.REDIRECT_URI);
+  
+  console.log(body);
+  
+
+  console.log(response);
+  
+  console.log(response.ok);
+  
+  let json: any;
+  if (response.ok) {
+    json = await response.json(); 
+    console.log(json);
+    
+    setTimeout(() => {
+      refreshAccessToken(json.refresh_token);
+  }, json.expires_in * 1000);
+  }
+
+  
+
+
+  res.status(200).json(json);
+})
+
+router.get("/startToken", async (req, res) => {
+  console.log("startToken");
+    const state = uuidv4();
+    let url = await getLoginUrl(state);
+  console.log("url");
+  console.log(url);
+
+
+  res.json({url : url});
+  let transaction = new Transaction({
+    state: state
+  });
+
+  
+  
+  await transaction.save();
+  console.log("end starttoken");
+
+})
 
 const getGenres = async (artists: any[]) => {
   let genres = new Map<string, number>();

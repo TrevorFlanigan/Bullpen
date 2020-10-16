@@ -18,6 +18,7 @@ const node_fetch_1 = __importDefault(require("node-fetch"));
 const mapToSet_1 = __importDefault(require("../mapToSet"));
 const testAccessToken_1 = __importDefault(require("../testAccessToken"));
 const tracks_1 = require("../util/tracks");
+const playlists_1 = require("../util/playlists");
 const router = express_1.default.Router();
 /**
  * Returns the set L ∩ (R ∪ S)', where L is the long-term favorites,
@@ -37,103 +38,50 @@ router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
     let skippedIds = user.skipped.map((element) => element.id);
     let alreadyAdded = user.oldFavoritePlaylist.map((track) => track.id);
-    let recentTracks = new Set();
-    let longTracks = new Set();
-    let shortTracks = new Set();
     let recentTrackIds = new Set();
+    let mediumTrackIds = new Set();
     let longTrackIds = new Set();
     let shortTrackIds = new Set();
     let longHistory = tracks_1.longHistoryTracks(accessToken);
+    let mediumHistory = tracks_1.mediumHistoryTracks(accessToken);
     let shortHistory = tracks_1.shortHistoryTracks(accessToken);
     let recentlyPlayed = tracks_1.recentlyPlayedTracks(accessToken);
-    let [longRes, shortRes, recentRes] = yield Promise.all([
+    let [longRes, shortRes, recentRes, mediumRes] = yield Promise.all([
         longHistory,
         shortHistory,
         recentlyPlayed,
+        mediumHistory,
     ]);
-    let [longJson, shortJson, recentJson] = yield Promise.all([
+    let [longJson, shortJson, recentJson, mediumJson] = yield Promise.all([
         longRes.json(),
         shortRes.json(),
         recentRes.json(),
+        mediumRes.json(),
     ]);
-    [longTracks, shortTracks, recentTracks] = yield Promise.all([
+    let recentTracks = new Set();
+    let longTracks = new Set();
+    let mediumTracks = new Set();
+    let shortTracks = new Set();
+    [longTracks, shortTracks, recentTracks, mediumTracks] = yield Promise.all([
         mapToSet_1.default(longJson.items),
         mapToSet_1.default(shortJson.items),
         mapToSet_1.default(recentJson.items),
+        mapToSet_1.default(mediumJson.items),
     ]);
     let shortNext = shortJson.next;
     let longNext = longJson.next;
     let recentNext = recentJson.next;
-    let shortPromise = new Promise((res, rej) => __awaiter(void 0, void 0, void 0, function* () {
-        let promises = [new Promise((res) => res())];
-        while (shortNext) {
-            let shortRes = yield node_fetch_1.default(shortNext, {
-                method: "get",
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                },
-            });
-            let shortJson = yield shortRes.json();
-            let promise = new Promise((res) => {
-                for (const track of shortJson.items) {
-                    shortTracks.add(track);
-                }
-                res();
-            });
-            promises.push(promise);
-            shortNext = shortJson.next;
-        }
-        yield Promise.all(promises);
-        res();
-    }));
-    let longPromise = new Promise((res, rej) => __awaiter(void 0, void 0, void 0, function* () {
-        let promises = [new Promise((res) => res())];
-        while (longNext) {
-            let longRes = yield node_fetch_1.default(longNext, {
-                method: "get",
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                },
-            });
-            let longJson = yield longRes.json();
-            let promise = new Promise((res) => {
-                for (const track of longJson.items) {
-                    longTracks.add(track);
-                }
-                res();
-            });
-            promises.push(promise);
-            longNext = longJson.next;
-        }
-        yield Promise.all(promises);
-        res();
-    }));
-    let recentPromise = new Promise((res, rej) => __awaiter(void 0, void 0, void 0, function* () {
-        let promises = [new Promise((res) => res())];
-        while (recentNext) {
-            let recentRes = yield node_fetch_1.default(recentNext, {
-                method: "get",
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                },
-            });
-            let recentJson = yield recentRes.json();
-            let promise = new Promise((res) => {
-                for (const track of recentJson.items) {
-                    recentTracks.add(track.track);
-                }
-                res();
-            });
-            promises.push(promise);
-            recentNext = recentJson.next;
-        }
-        yield Promise.all(promises);
-        res();
-    }));
-    yield Promise.all([shortPromise, longPromise, recentPromise]);
+    let mediumNext = mediumJson.next;
+    let shortPromise = playlists_1.getAllFromNext(accessToken, shortNext, shortTracks);
+    let longPromise = playlists_1.getAllFromNext(accessToken, longNext, longTracks);
+    let mediumPromise = playlists_1.getAllFromNext(accessToken, mediumNext, mediumTracks);
+    let recentPromise = playlists_1.getAllFromNext(accessToken, recentNext, recentTracks);
+    [shortTracks, longTracks, recentTracks, mediumTracks] = yield Promise.all([
+        shortPromise,
+        longPromise,
+        recentPromise,
+        mediumPromise,
+    ]);
     if (user)
         user.recentlyPlayed = Array.from(recentTracks);
     for (let track of recentTracks) {
@@ -152,7 +100,18 @@ router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, functio
             longTracks.delete(track);
         }
     }
+    for (let track of mediumTracks) {
+        if (shortTrackIds.has(track.id) ||
+            recentTrackIds.has(track.id) ||
+            skippedIds.includes(track.id) ||
+            alreadyAdded.includes(track.id)) {
+            console.log("removed medium track: " + track.name);
+            mediumTracks.delete(track);
+        }
+    }
     let final = Array.from(longTracks.values());
+    if (!final.length)
+        final = Array.from(mediumTracks.values());
     if (user)
         user.oldFavorites = final;
     yield user.save();
@@ -273,13 +232,17 @@ router.get("/forgottenDB", (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.status(404).json({ error: "User not found" });
         return;
     }
-    res.status(404).json(user.oldFavorites);
+    res.status(200).json(user.oldFavorites);
 }));
 /**
  *
  */
 router.post("/addforgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log(req.query);
+    const accessToken = req.query.accessToken;
+    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
+        return;
+    }
     let user = yield User_1.default.findOne({ id: req.query.uid });
     if (!user) {
         res.status(404).json({ error: "User not found" });
@@ -301,6 +264,8 @@ router.post("/addforgotten", (req, res) => __awaiter(void 0, void 0, void 0, fun
         }
         return !finalIds.includes(track.id);
     });
+    let songUris = final.map((track) => track.uri);
+    playlists_1.addToPlaylist(accessToken, user.oldFavoritePlaylistId, songUris);
     yield user.save();
     res.status(200).json({ msg: "hello" });
 }));
