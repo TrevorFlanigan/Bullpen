@@ -28,7 +28,7 @@ const makePlaylist = (accessToken, uid, name) => __awaiter(void 0, void 0, void 
             }),
         });
         let json = yield res.json();
-        console.log("done");
+        console.log("done makeplaylist");
         return json;
     }
     catch (e) {
@@ -53,7 +53,7 @@ const addToPlaylist = (accessToken, playlist_id, trackUris) => __awaiter(void 0,
         });
         let json = yield res.json();
         console.log(json);
-        console.log("done");
+        console.log("done addtoplaylist");
         return json;
     }
     catch (e) {

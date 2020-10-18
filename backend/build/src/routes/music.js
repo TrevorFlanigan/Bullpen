@@ -15,10 +15,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const User_1 = __importDefault(require("../schemas/User"));
 const node_fetch_1 = __importDefault(require("node-fetch"));
-const mapToSet_1 = __importDefault(require("../mapToSet"));
-const testAccessToken_1 = __importDefault(require("../testAccessToken"));
+const mapToSet_1 = __importDefault(require("../util/mapToSet"));
+const testAccessToken_1 = __importDefault(require("../util/testAccessToken"));
 const tracks_1 = require("../util/tracks");
 const playlists_1 = require("../util/playlists");
+const users_1 = __importDefault(require("../util/users"));
 const router = express_1.default.Router();
 /**
  * Returns the set L ∩ (R ∪ S)', where L is the long-term favorites,
@@ -27,15 +28,8 @@ const router = express_1.default.Router();
  * @param uid user id for current user.
  */
 router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const accessToken = req.query.accessToken;
-    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
-        return;
-    }
-    let user = yield User_1.default.findOne({ id: req.query.uid });
-    if (!user) {
-        res.status(404).json({ error: "User not found" });
-        return;
-    }
+    console.log("forgotten getuser...");
+    let { user, accessToken } = yield users_1.default(req, res);
     let skippedIds = user.skipped.map((element) => element.id);
     let alreadyAdded = user.oldFavoritePlaylist.map((track) => track.id);
     let recentTrackIds = new Set();
@@ -125,13 +119,11 @@ router.get("/test", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 }));
 /**
  * Returns the user's recent tracks
- * @param accessToken spotify accessToken
+ * @param uid spotify user id
  */
 router.get("/recent", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const accessToken = req.query.accessToken;
-    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
-        return;
-    }
+    console.log("Recent getuser");
+    let { user, accessToken } = yield users_1.default(req, res);
     let recentlyPlayed = tracks_1.recentlyPlayedTracks(accessToken);
     let [recentRes] = yield Promise.all([recentlyPlayed]);
     let [recentJson] = yield Promise.all([recentRes.json()]);
@@ -160,7 +152,7 @@ router.get("/recent", (req, res) => __awaiter(void 0, void 0, void 0, function* 
             recentNext = recentJson.next;
         } while (recentNext);
         yield Promise.all(promises);
-        console.log("done");
+        console.log("done /recent");
         res();
     }));
     yield Promise.all([recentPromise]);
@@ -227,27 +219,20 @@ router.delete("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, func
  */
 router.get("/forgottenDB", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("get forgotten from DB");
+    // let { user } = await getUserAndRefreshToken(req, res);
     let user = yield User_1.default.findOne({ id: req.query.uid });
     if (!user) {
-        res.status(404).json({ error: "User not found" });
+        res.status(500).send({ error: "user not found" });
         return;
     }
     res.status(200).json(user.oldFavorites);
 }));
 /**
- *
+ * @param uid user id
  */
 router.post("/addforgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(req.query);
-    const accessToken = req.query.accessToken;
-    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
-        return;
-    }
-    let user = yield User_1.default.findOne({ id: req.query.uid });
-    if (!user) {
-        res.status(404).json({ error: "User not found" });
-        return;
-    }
+    console.log("addforgotten");
+    let { user, accessToken } = yield users_1.default(req, res);
     let ids = req.body.toAdd || [];
     let oldFavoritesToAdd = user.oldFavorites.filter((track) => ids.includes(track.id));
     let oldFavoritePlaylist = user.oldFavoritePlaylist || [];

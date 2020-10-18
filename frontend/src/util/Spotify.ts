@@ -15,9 +15,9 @@ let Spotify = {
       let accessTokenMatch = window.location.href.match(/access_token=([^&]*)/);
       let expiresInMatch = window.location.href.match(/expires_in=([^&]*)/);
       let refreshTokenMatch = window.location.href.match(/refresh_token=([^&]*)/);
-      console.log("refreshTokenMatch");      
+      console.log("refreshTokenMatch");
       console.log(refreshTokenMatch);
-      
+
       if (accessTokenMatch && expiresInMatch) {
         accessToken = accessTokenMatch[1];
         expiresIn = expiresInMatch[1];
@@ -66,9 +66,6 @@ let Spotify = {
     let user = Cookies.get("user") as any;
     if (user) {
       return user;
-    }
-    if (!Cookies.get("accessToken")) {
-      return null;
     }
 
     let res = await fetch("https://api.spotify.com/v1/me", {

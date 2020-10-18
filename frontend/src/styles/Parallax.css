@@ -50,6 +50,10 @@
   background-position-y: center;
 }
 
+.static3 {
+  background-image: url("../assets/magnifying.jpg");
+}
+
 .bg1::after {
   background-image: url("../assets/bullpen.jpg");
   background-repeat: no-repeat;

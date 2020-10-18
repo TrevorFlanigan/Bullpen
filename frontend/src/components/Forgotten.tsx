@@ -10,7 +10,7 @@ interface IForgottenProps {
 }
 
 interface IForgottenState {
-  tracks: [any];
+  tracks: any[];
   index: Number;
   index1: Number;
   index2: Number;
@@ -18,7 +18,7 @@ interface IForgottenState {
 
 class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
   state = {
-    tracks: [] as any,
+    tracks: [],
     index: 0,
     index1: 1,
     index2: 2,
@@ -33,9 +33,6 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
 
   getForgottenFromDB = async () => {
     let user = JSON.parse(Cookies.get("user") || "");
-
-    console.log(Cookies.get("accessToken"));
-
     let res = await fetch(
       `http://localhost:4000/api/music/forgottenDB?uid=${user.id}`,
       {
@@ -55,7 +52,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
       let res = await fetch(
         `http://localhost:4000/api/music/forgotten?uid=${
           user.id
-        }&accessToken=${Cookies.get("accessToken")}`,
+        }`,
         {
           method: "get",
           headers: {
@@ -123,7 +120,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     let res = await fetch(
       `http://localhost:4000/api/music/addforgotten?uid=${
         user.id
-      }&accessToken=${Cookies.get("accessToken")}`,
+      }`,
       {
         method: "post",
         headers: {
@@ -137,7 +134,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
 
     console.log(await res.json());
 
-    console.log("done");
+    console.log("done heart");
   };
 
   public render() {

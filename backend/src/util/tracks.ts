@@ -1,4 +1,6 @@
 import fetch from "node-fetch";
+import mapToSet from "./mapToSet";
+import { getAllFromNext } from "./playlists";
 
 const longHistoryTracks = (accessToken: string) => {
   return fetch(
@@ -43,9 +45,65 @@ const recentlyPlayedTracks = (accessToken: string) =>
       "Content-Type": "application/json",
     },
   });
+
+
+const getAllTracksFromTimeFrame = async (accessToken: string, timeFrame: "long_term" | "medium_term" | "short_term"): Promise<Set<any>> => {
+  let res = await fetch(
+    `https://api.spotify.com/v1/me/top/tracks?time_range=${timeFrame}`,
+    {
+      method: "get",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (res.ok) {
+    let json = await res.json();
+
+    let tracks = await mapToSet(json.items);
+    let next = json.next;
+    let allTracks = await getAllFromNext(accessToken, next, tracks);
+    return allTracks;
+  }
+  else {
+    throw new Error("Failed to get tracks from time frame")
+  }
+
+}
+
+
+const getAllRecentlyPlayed = async (accessToken: string): Promise<Set<any>> => {
+  let res = await fetch(
+    "https://api.spotify.com/v1/me/player/recently-played",
+    {
+      method: "get",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (res.ok) {
+    let json = await res.json();
+
+    let tracks = await mapToSet(json.items);
+    let next = json.next;
+    let allTracks = await getAllFromNext(accessToken, next, tracks);
+    return allTracks;
+  }
+  else {
+    throw new Error("Failed to get all recent tracks");
+  }
+
+}
 export {
   longHistoryTracks,
   shortHistoryTracks,
   recentlyPlayedTracks,
   mediumHistoryTracks,
+  getAllTracksFromTimeFrame,
+  getAllRecentlyPlayed
 };

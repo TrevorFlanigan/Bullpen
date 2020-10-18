@@ -21,7 +21,7 @@ function App() {
             exact
             path="/"
             component={
-              Cookies.get("accessToken") ? AuthorizedApp : UnauthorizedApp
+              Cookies.get("user") ? AuthorizedApp : UnauthorizedApp
             }
           />
           <Route exact path="/authorize" component={Authorize} />

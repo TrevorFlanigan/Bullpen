@@ -15,12 +15,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const express_1 = __importDefault(require("express"));
 const User_1 = __importDefault(require("../schemas/User"));
-const testAccessToken_1 = __importDefault(require("../testAccessToken"));
-const mapToSet_1 = __importDefault(require("../mapToSet"));
+const testAccessToken_1 = __importDefault(require("../util/testAccessToken"));
+const mapToSet_1 = __importDefault(require("../util/mapToSet"));
 const tracks_1 = require("../util/tracks");
 const artists_1 = require("../util/artists");
 const playlists_1 = require("../util/playlists");
 const spotify_1 = require("../util/spotify");
+const Transaction_1 = __importDefault(require("../schemas/Transaction"));
+const uuid_1 = require("uuid");
+const users_1 = __importDefault(require("../util/users"));
 const router = express_1.default.Router();
 /**
  * @param accessToken Spotify access token
@@ -28,20 +31,28 @@ const router = express_1.default.Router();
 router.post("/createUser", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("/createUser");
     const accessToken = req.query.accessToken;
+    const refreshToken = req.query.refreshToken;
     let body = req.body;
     if (!(yield testAccessToken_1.default(accessToken, req, res))) {
         return;
     }
-    const user = yield User_1.default.findOne({ uri: body.uri });
+    let user = yield User_1.default.findOne({ uri: body.uri });
     if (user) {
         console.log("user already exists");
+        user.access_token = accessToken;
+        user.refresh_token = refreshToken;
+        yield user.save();
+        console.log(user.access_token);
         res.status(302).send("User already exists");
         return;
     }
     else {
         try {
             console.log("Creating new User");
+            console.log(req.query.accessToken);
             let newUser = new User_1.default({
+                access_token: req.query.accessToken,
+                refresh_token: req.query.refresh_token,
                 display_name: body.display_name,
                 followers: body.followers,
                 href: body.href,
@@ -55,6 +66,7 @@ router.post("/createUser", (req, res) => __awaiter(void 0, void 0, void 0, funct
                 oldFavoritePlaylist: [],
                 discoverPlaylistName: "The Bullpen",
             });
+            yield newUser.save();
             let artists = new Set();
             let artistIds = new Set();
             let recentTracks = new Set();
@@ -270,16 +282,8 @@ router.post("/createUser", (req, res) => __awaiter(void 0, void 0, void 0, funct
  * @param uid user id for current user.
  */
 router.get("/artists", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const accessToken = req.query.accessToken;
-    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
-        return;
-    }
-    let userID = req.query.uid;
-    let user = yield User_1.default.findOne({ id: userID });
-    if (!user) {
-        res.status(404).json({ error: "User not found" });
-        return;
-    }
+    console.log("artists");
+    let { user, accessToken } = yield users_1.default(req, res);
     let artists = new Set();
     let longHistory = artists_1.getLongHistoryArtists(accessToken);
     let shortHistory = artists_1.getShortHistoryArtists(accessToken);
@@ -408,20 +412,8 @@ router.get("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, func
  * @param uid user id for current user.
  */
 router.put("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("put /playlistName");
-    const accessToken = req.query.accessToken;
-    console.log(accessToken);
-    let body = req.body;
-    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
-        console.log("no accessToken");
-        return;
-    }
-    const user = yield User_1.default.findOne({ uid: body.uid });
-    if (!user) {
-        console.log("No User");
-        res.sendStatus(404);
-        return;
-    }
+    console.log("playlistname");
+    let { user, accessToken } = yield users_1.default(req, res);
     if (!req.query.playlistName || !req.query.playlist) {
         console.log("No playlist or playlistname");
         res.sendStatus(400);
@@ -463,9 +455,42 @@ router.put("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, func
     res.sendStatus(result.status);
 }));
 router.get("/token", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("/token");
-    spotify_1.requestToken();
-    res.sendStatus(200);
+    console.log("token");
+    let code = req.query.code;
+    let state = req.query.state;
+    let b64 = Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`).toString("base64");
+    console.log(b64);
+    let body = `grant_type=authorization_code&code=${code}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}`;
+    let response = yield node_fetch_1.default("https://accounts.spotify.com/api/token", {
+        method: "post",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${b64}`
+        },
+        body: body
+    });
+    let json;
+    if (response.ok) {
+        json = yield response.json();
+        console.log(json);
+        res.status(200).json(json);
+    }
+    else {
+        res.status(500).send({ error: "something went wrong" });
+    }
+}));
+router.get("/startToken", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("startToken");
+    const state = uuid_1.v4();
+    let url = yield spotify_1.getLoginUrl(state);
+    res.json({ url: url });
+    let transaction = new Transaction_1.default({
+        state: state
+    });
+    yield transaction.save();
+    console.log("end starttoken");
+}));
+router.get("/test", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 }));
 const getGenres = (artists) => __awaiter(void 0, void 0, void 0, function* () {
     let genres = new Map();

@@ -8,6 +8,9 @@ interface IUser extends mongoose.Document {
   images: [Object];
   uri: string;
   recentlyPlayed: any[];
+  shortHistory: any[];
+  mediumHistory: any[];
+  longHistory: any[];
   favoriteArtists: any[];
   favoriteGenres: any[];
   skipped: any[];
@@ -17,6 +20,8 @@ interface IUser extends mongoose.Document {
   discoverPlaylistId: string;
   oldFavoritePlaylistName: string;
   oldFavoritePlaylistId: string;
+  refresh_token: string;
+  access_token: string;
 }
 const UserSchema = new mongoose.Schema({
   date: {
@@ -49,6 +54,15 @@ const UserSchema = new mongoose.Schema({
   recentlyPlayed: {
     type: [Object],
   },
+  shortHistory: {
+    type: [Object],
+  },
+  mediumHistory: {
+    type: [Object],
+  },
+  longHistory: {
+    type: [Object],
+  },
   favoriteArtists: {
     type: [Object],
   },
@@ -78,6 +92,12 @@ const UserSchema = new mongoose.Schema({
   oldFavoritePlaylistId: {
     type: String,
   },
+  access_token: {
+    type: String,
+  },
+  refresh_token: {
+    type: String,
+  }
 });
 const User = mongoose.model<IUser>("User", UserSchema);
 export default User;

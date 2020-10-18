@@ -16,7 +16,7 @@ const makePlaylist = async (accessToken: string, uid: string, name: string) => {
 
     let json = await res.json();
 
-    console.log("done");
+    console.log("done makeplaylist");
 
     return json;
   } catch (e) {
@@ -51,7 +51,7 @@ const addToPlaylist = async (
     let json = await res.json();
     console.log(json);
 
-    console.log("done");
+    console.log("done addtoplaylist");
 
     return json;
   } catch (e) {
@@ -66,8 +66,8 @@ const getAllFromNext = async (
   next: string,
   prevSet?: Set<any>
 ) => {
-  return new Promise<any>(async (res, rej) => {
-    if (!next) res(prevSet);
+  return new Promise<Set<any>>(async (res, rej) => {
+    if (!next) res(prevSet || new Set<any>());
     let tracks = new Set<any>(prevSet);
     let promises: [Promise<any>] = [new Promise((res) => res())];
     while (next) {

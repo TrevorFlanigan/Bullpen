@@ -59,11 +59,10 @@ export default class SettingsPage extends React.Component<
   updatePlaylist = (
     id: string,
     name: string,
-    accessToken: string,
     which: string
   ) => {
     return fetch(
-      `http://localhost:4000/api/users/playlistName?uid=${id}&playlist=${which}&playlistName=${name}&accessToken=${accessToken}`,
+      `http://localhost:4000/api/users/playlistName?uid=${id}&playlist=${which}&playlistName=${name}`,
       {
         method: "put",
         headers: {
@@ -76,18 +75,14 @@ export default class SettingsPage extends React.Component<
   updateSettings = async () => {
     const { id } = JSON.parse(Cookies.get("user") as string);
 
-    const accessToken = Cookies.get("accessToken") as string;
-
     let oldPromise = this.updatePlaylist(
       id,
       this.state.oldName,
-      accessToken,
       "old"
     );
     let discoverPromise = this.updatePlaylist(
       id,
       this.state.discoverName,
-      accessToken,
       "discover"
     );
 
@@ -95,19 +90,18 @@ export default class SettingsPage extends React.Component<
   };
   async componentDidMount() {
     let user = JSON.parse(Cookies.get("user") || "");
-    let accessToken = Cookies.get("accessToken");
     let discover = await (
       await fetch(
-        `http://localhost:4000/api/users/playlistName?uid=${user.id}&playlist=discover&accessToken=${accessToken}`
+        `http://localhost:4000/api/users/playlistName?uid=${user.id}&playlist=discover`
       )
     ).json();
     let old = await (
       await fetch(
-        `http://localhost:4000/api/users/playlistName?uid=${user.id}&playlist=old&accessToken=${accessToken}`
+        `http://localhost:4000/api/users/playlistName?uid=${user.id}&playlist=old`
       )
     ).json();
     this.setState({
-      discoverName: discover.name || "Discover Playlist",
+      discoverName: discover.name || "The Bullpen",
       oldName: old.name || "Old Flames",
     });
   }

@@ -4,7 +4,7 @@ interface ILoginButtonProps {}
 
 interface ILoginButtonState {}
 
-export default class LoginButton extends React.Component<
+export default class LogoutButton extends React.Component<
   ILoginButtonProps,
   ILoginButtonState
 > {
@@ -13,15 +13,15 @@ export default class LoginButton extends React.Component<
       <button
         style={{ alignSelf: "flex-end", marginRight: 10 }}
         onClick={async () => {
-          const url = "https://www.spotify.com/logout/";
-          const spotifyLogoutWindow = await window.open(
-            url,
-            "Spotify Logout",
-            "width=700,height=500,top=40,left=40"
-          );
-          setTimeout(() => spotifyLogoutWindow?.close(), 1);
+          // const url = "https://www.spotify.com/logout/";
+          // const spotifyLogoutWindow = await window.open(
+          //   url,
+          //   "Spotify Logout",
+          //   "width=700,height=500,top=40,left=40"
+          // );
+          // setTimeout(() => spotifyLogoutWindow?.close(), 1);
           Cookies.remove("user");
-          Cookies.remove("accessToken");
+          // Cookies.remove("accessToken");
           window.location.reload();
         }}
       >

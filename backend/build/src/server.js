@@ -18,15 +18,17 @@ const cors_1 = __importDefault(require("cors"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const users_1 = __importDefault(require("./routes/users"));
 const music_1 = __importDefault(require("./routes/music"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const app = express_1.default();
 app.use(cors_1.default());
 app.use(body_parser_1.default.json());
 app.get("/", (req, res) => res.send("Express + TypeScript Server"));
 app.use("/api/users", users_1.default);
 app.use("/api/music", music_1.default);
-const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
+const connectDB = (url = "mongodb://localhost:27017/bullpen") => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        yield mongoose_1.default.connect("mongodb://localhost:27017/bullpen", {
+        yield mongoose_1.default.connect(url, {
             useNewUrlParser: true,
             useCreateIndex: true,
             useFindAndModify: false,
@@ -40,5 +42,9 @@ const connectDB = () => __awaiter(void 0, void 0, void 0, function* () {
         process.exit(1);
     }
 });
-connectDB();
+if (process.env.NODE_ENV === "test")
+    connectDB("mongodb://localhost:27017/bullpen-test");
+else {
+    connectDB();
+}
 exports.default = app;

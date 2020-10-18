@@ -2,18 +2,21 @@ import fetch from "node-fetch";
 import mongoose from "mongoose";
 import express from "express";
 import User from "../schemas/User";
-import testAccessToken from "../testAccessToken";
-import mapToSet from "../mapToSet";
+import testAccessToken from "../util/testAccessToken";
+import mapToSet from "../util/mapToSet";
 import {
   longHistoryTracks,
   recentlyPlayedTracks,
   shortHistoryTracks,
+  getAllTracksFromTimeFrame,
+  getAllRecentlyPlayed
 } from "../util/tracks";
 import { getLongHistoryArtists, getShortHistoryArtists } from "../util/artists";
 import { makePlaylist } from "../util/playlists";
-import { getLoginUrl, refreshAccessToken} from "../util/spotify";
+import { getLoginUrl, refreshAccessToken } from "../util/spotify";
 import Transaction from "../schemas/Transaction";
-import {v4 as uuidv4} from "uuid";
+import { v4 as uuidv4 } from "uuid";
+import getUserAndRefreshToken from "../util/users";
 const router = express.Router();
 
 /**
@@ -23,16 +26,36 @@ router.post("/createUser", async (req, res) => {
   console.log("/createUser");
 
   const accessToken: string = req.query.accessToken as string;
+  const refreshToken: string = req.query.refreshToken as string;
   let body = req.body;
 
   if (!(await testAccessToken(accessToken, req, res))) {
     return;
   }
 
-  const user = await User.findOne({ uri: body.uri });
+  let user = await User.findOne({ uri: body.uri });
+
 
   if (user) {
     console.log("user already exists");
+    user.access_token = accessToken;
+    user.refresh_token = refreshToken;
+    console.log(user.access_token);
+
+
+    let mediumTracks = await getAllTracksFromTimeFrame(accessToken, "medium_term");
+    let shortTracks = await getAllTracksFromTimeFrame(accessToken, "short_term");
+    let recentTracks = await getAllRecentlyPlayed(accessToken);
+    let short = Array.from(shortTracks.values());
+    let medium = Array.from(mediumTracks.values());
+    let recent = Array.from(recentTracks.values());
+
+    user.recentlyPlayed = recent;
+    user.shortHistory = short;
+    user.mediumHistory = medium;
+
+    await user.save();
+
     res.status(302).send("User already exists");
     return;
   } else {
@@ -40,6 +63,8 @@ router.post("/createUser", async (req, res) => {
       console.log("Creating new User");
 
       let newUser = new User({
+        access_token: req.query.accessToken,
+        refresh_token: req.query.refreshToken,
         display_name: body.display_name,
         followers: body.followers,
         href: body.href,
@@ -53,6 +78,10 @@ router.post("/createUser", async (req, res) => {
         oldFavoritePlaylist: [],
         discoverPlaylistName: "The Bullpen",
       });
+
+      await newUser.save();
+
+
       let artists = new Set<any>();
       let artistIds = new Set<string>();
       let recentTracks = new Set<any>();
@@ -299,20 +328,9 @@ router.post("/createUser", async (req, res) => {
  * @param uid user id for current user.
  */
 router.get("/artists", async (req, res) => {
-  const accessToken: string = req.query.accessToken as string;
+  console.log("artists");
 
-  if (!(await testAccessToken(accessToken, req, res))) {
-    return;
-  }
-
-  let userID = req.query.uid;
-
-  let user = await User.findOne({ id: userID });
-
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
-  }
+  let { user, accessToken } = await getUserAndRefreshToken(req, res);
   let artists = new Set<any>();
 
   let longHistory = getLongHistoryArtists(accessToken);
@@ -401,20 +419,8 @@ router.get("/artists", async (req, res) => {
  * @param {"discover | old"} playlist
  */
 router.get("/playlistName", async (req, res) => {
-  let userID = req.query.uid;
+  let { user, accessToken } = await getUserAndRefreshToken(req, res);
   let playlist = req.query.playlist;
-  let user = await User.findOne({ id: userID });
-
-  const accessToken: string = req.query.accessToken as string;
-
-  if (!(await testAccessToken(accessToken, req, res))) {
-    console.log("no accessToken");
-    return;
-  }
-  if (!user) {
-    res.sendStatus(404);
-    return;
-  }
   if (playlist == "old") {
     res.status(200).json({ name: user.oldFavoritePlaylistName });
 
@@ -464,25 +470,9 @@ router.get("/playlistName", async (req, res) => {
  * @param uid user id for current user.
  */
 router.put("/playlistName", async (req, res) => {
-  console.log("put /playlistName");
+  console.log("playlistname");
 
-  const accessToken: string = req.query.accessToken as string;
-  console.log(accessToken);
-
-  let body = req.body;
-
-  if (!(await testAccessToken(accessToken, req, res))) {
-    console.log("no accessToken");
-    return;
-  }
-
-  const user = await User.findOne({ uid: body.uid });
-
-  if (!user) {
-    console.log("No User");
-    res.sendStatus(404);
-    return;
-  }
+  let { user, accessToken } = await getUserAndRefreshToken(req, res);
 
   if (!req.query.playlistName || !req.query.playlist) {
     console.log("No playlist or playlistname");
@@ -534,9 +524,9 @@ router.get("/token", async (req, res) => {
   let state = req.query.state;
   let b64 = Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`).toString("base64");
   console.log(b64);
-  
+
   let body = `grant_type=authorization_code&code=${code}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI as string)}`;
-  let response =  await fetch("https://accounts.spotify.com/api/token", {
+  let response = await fetch("https://accounts.spotify.com/api/token", {
     method: "post",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -545,51 +535,37 @@ router.get("/token", async (req, res) => {
     body: body
   });
 
-  console.log(process.env.REDIRECT_URI);
-  
-  console.log(body);
-  
-
-  console.log(response);
-  
-  console.log(response.ok);
-  
   let json: any;
   if (response.ok) {
-    json = await response.json(); 
+    json = await response.json();
     console.log(json);
-    
-    setTimeout(() => {
-      refreshAccessToken(json.refresh_token);
-  }, json.expires_in * 1000);
+    res.status(200).json(json);
+  }
+  else {
+    res.status(500).send({ error: "something went wrong" })
   }
 
-  
-
-
-  res.status(200).json(json);
 })
 
 router.get("/startToken", async (req, res) => {
   console.log("startToken");
-    const state = uuidv4();
-    let url = await getLoginUrl(state);
-  console.log("url");
-  console.log(url);
+  const state = uuidv4();
+  let url = await getLoginUrl(state);
 
-
-  res.json({url : url});
+  res.json({ url: url });
   let transaction = new Transaction({
     state: state
   });
 
-  
-  
+
+
   await transaction.save();
   console.log("end starttoken");
 
 })
 
+router.get("/test", async (req, res) => {
+})
 const getGenres = async (artists: any[]) => {
   let genres = new Map<string, number>();
   artists.forEach((artist) => {

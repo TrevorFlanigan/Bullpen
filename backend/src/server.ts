@@ -17,9 +17,9 @@ app.get("/", (req, res) => res.send("Express + TypeScript Server"));
 app.use("/api/users", users);
 app.use("/api/music", music);
 
-const connectDB = async () => {
+const connectDB = async (url: string = "mongodb://localhost:27017/bullpen") => {
   try {
-    await mongoose.connect("mongodb://localhost:27017/bullpen", {
+    await mongoose.connect(url, {
       useNewUrlParser: true,
       useCreateIndex: true,
       useFindAndModify: false,
@@ -34,5 +34,9 @@ const connectDB = async () => {
   }
 };
 
-connectDB();
+if (process.env.NODE_ENV === "test")
+  connectDB("mongodb://localhost:27017/bullpen-test");
+else {
+  connectDB();
+}
 export default app;

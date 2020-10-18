@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 import express from "express";
 import User from "../schemas/User";
 import fetch from "node-fetch";
-import mapToSet from "../mapToSet";
-import testAccessToken from "../testAccessToken";
+import mapToSet from "../util/mapToSet";
+import testAccessToken from "../util/testAccessToken";
 import {
   longHistoryTracks,
   shortHistoryTracks,
@@ -11,6 +11,9 @@ import {
   mediumHistoryTracks,
 } from "../util/tracks";
 import { addToPlaylist, getAllFromNext } from "../util/playlists";
+import { refreshAccessToken } from "../util/spotify";
+import getUserAndRefreshToken from "../util/users";
+import { json } from "body-parser";
 const router = express.Router();
 
 /**
@@ -20,15 +23,7 @@ const router = express.Router();
  * @param uid user id for current user.
  */
 router.get("/forgotten", async (req, res) => {
-  const accessToken = req.query.accessToken as string;
-  if (!(await testAccessToken(accessToken, req, res))) {
-    return;
-  }
-  let user = await User.findOne({ id: req.query.uid });
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
-  }
+  let { user, accessToken } = await getUserAndRefreshToken(req, res);
 
   let skippedIds = user.skipped.map((element) => element.id);
   let alreadyAdded = user.oldFavoritePlaylist.map((track) => track.id);
@@ -101,7 +96,6 @@ router.get("/forgotten", async (req, res) => {
       skippedIds.includes(track.id) ||
       alreadyAdded.includes(track.id)
     ) {
-      console.log("removed track: " + track.name);
       longTracks.delete(track);
     }
   }
@@ -113,7 +107,6 @@ router.get("/forgotten", async (req, res) => {
       skippedIds.includes(track.id) ||
       alreadyAdded.includes(track.id)
     ) {
-      console.log("removed medium track: " + track.name);
       mediumTracks.delete(track);
     }
   }
@@ -137,14 +130,12 @@ router.get("/test", async (req, res) => {
 
 /**
  * Returns the user's recent tracks
- * @param accessToken spotify accessToken
+ * @param uid spotify user id
  */
 router.get("/recent", async (req, res) => {
-  const accessToken: string = req.query.accessToken as string;
+  console.log("Recent getuser");
 
-  if (!(await testAccessToken(accessToken, req, res))) {
-    return;
-  }
+  let { user, accessToken } = await getUserAndRefreshToken(req, res);
 
   let recentlyPlayed = recentlyPlayedTracks(accessToken);
   let [recentRes] = await Promise.all([recentlyPlayed]);
@@ -159,8 +150,6 @@ router.get("/recent", async (req, res) => {
       let promise = new Promise((res) => {
         for (const track of recentJson.items) {
           recentTracks.add(track.track);
-          if (track.track.artists[0].name === "Jaden")
-            console.log(track.track.name);
         }
         res();
       });
@@ -177,7 +166,7 @@ router.get("/recent", async (req, res) => {
       recentNext = recentJson.next;
     } while (recentNext);
     await Promise.all(promises);
-    console.log("done");
+    console.log("done /recent");
 
     res();
   });
@@ -257,31 +246,25 @@ router.delete("/forgotten", async (req, res) => {
 router.get("/forgottenDB", async (req, res) => {
   console.log("get forgotten from DB");
 
-  let user = await User.findOne({ id: req.query.uid });
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
-  }
+  let { user } = await getUserAndRefreshToken(req, res);
+  // let user = await User.findOne({ id: req.query.uid });
+  // if (!user) {
+  //   res.status(500).send({ error: "user not found" });
+  //   return
+  // }
 
   res.status(200).json(user.oldFavorites);
 });
 
 /**
- *
+ * @param uid user id
  */
 router.post("/addforgotten", async (req, res) => {
-  console.log(req.query);
-  const accessToken: string = req.query.accessToken as string;
 
-  if (!(await testAccessToken(accessToken, req, res))) {
-    return;
-  }
+  console.log("addforgotten");
 
-  let user = await User.findOne({ id: req.query.uid });
-  if (!user) {
-    res.status(404).json({ error: "User not found" });
-    return;
-  }
+
+  let { user, accessToken } = await getUserAndRefreshToken(req, res);
 
   let ids = req.body.toAdd || [];
 
@@ -333,4 +316,94 @@ router.post("/makePlaylist", async (req, res) => {
 
   res.sendStatus(200);
 });
+
+/**
+ * Query: @param uid user id
+ * Body: 
+ *      @param seed_genres: array of genres to seed discover (not in use),
+ *      @param seed_tracks: array of tracks to seed 
+ *      @param seed_artists: array of artists to seed (not in use)
+ */
+router.get("/discover", async (req, res) => {
+  console.log("/discover");
+
+  console.log(req.query.uid);
+
+
+  let { user, accessToken } = await getUserAndRefreshToken(req, res);
+
+  let unique = new Set<any>();
+  user.shortHistory.forEach((track) => unique.add(track.id));
+  user.mediumHistory.forEach((track) => unique.add(track.id));
+  user.recentlyPlayed.forEach((track) => unique.add(track.id));
+  let seeds = Array.from(unique.values());
+  // let seeds = req.body.seed_tracks as string[];
+  let length = Number.parseInt(req.query.length as string);
+
+  if (!length) {
+    res.status(400).json({ error: "no length specified" });
+    return;
+  }
+
+  if (!seeds?.length) {
+    res.status(500).json({ error: "no seeds found" });
+    return;
+  }
+
+
+
+  let numRequests = Math.ceil(seeds.length / 5);
+  let limitPerRequest = 10  /* || Math.floor(length / numRequests)*/;
+
+
+  let promises = [];
+  let formatSeeds = (seeds: string[], start: number, end: number) => {
+    let seedSubset = seeds.slice(start, end);
+    return seedSubset.join(",")
+  }
+
+
+
+  console.log(formatSeeds(seeds, 0, 5));
+
+
+  for (let i = 0; i < 50; i += 5) {
+
+    let requestUrl = `https://api.spotify.com/v1/recommendations?limit=${limitPerRequest}&seed_tracks=${formatSeeds(seeds, i, i + 5)}`;
+    let res = fetch(requestUrl, {
+      method: "get",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`
+      }
+    }).catch(e => { throw e });
+
+    // if (!res.ok) throw new Error("something went wrong");
+    // let json = res.json();
+    promises.push(res);
+  }
+
+  let uniqueIds = new Set<string>();
+  let uniqueSongs = new Set<any>();
+
+  let results = await Promise.all(promises);
+  let jsonPromises = results.map(res => res.json());
+  let jsons = await Promise.all(jsonPromises);
+
+  jsons.forEach(object => {
+    object.tracks.forEach((track: any) => {
+      if (!uniqueIds.has(track.id)) {
+        uniqueIds.add(track.id);
+        uniqueSongs.add(track);
+      }
+    })
+  });
+  let final = Array.from(uniqueSongs.values())
+  res.status(200).json(final);
+
+
+})
+
+
+
 export default router;

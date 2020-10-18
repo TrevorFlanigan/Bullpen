@@ -14,31 +14,24 @@ export default class Authorize extends React.Component<
   IAuthorizeState
 > {
   state = {
-    redirect: Cookies.get("user") && Cookies.get("accessToken") ? true : false,
+    redirect: Cookies.get("user") ? true : false,
   };
 
   async componentDidMount() {
     let user: any = {};
-    let accessTokenMatch = window.location.href.match(/access_token=([^&]*)/);
-    let expiresInMatch = window.location.href.match(/expires_in=([^&]*)/);
     let stateMatch = window.location.href.match(/state=([^&]*)/);
     let codeMatch = window.location.href.match(/code=([^&]*)/);
 
     if (!stateMatch || !codeMatch) return
 
-    let userInfoRes = await fetch(`http://localhost:4000/api/users/token?code=${codeMatch[1]}&state=${stateMatch[1]}`);
-    console.log(stateMatch);
-    
+    let userInfoRes = await fetch(`http://localhost:4000/api/users/token?code=${codeMatch[1]}&state=${stateMatch[1]}`);    
     let userInfo = await userInfoRes.json();
-    let {access_token, expires_in} = userInfo;
+    let {access_token, expires_in, refresh_token} = userInfo;
     if (access_token && expires_in) {
-    //   let accessToken = accessTokenMatch[1];
-    //   let expiresIn = expiresInMatch[1];
-      Cookies.set("accessToken", access_token);
       user = await Spotify.getUser(access_token);
 
       await fetch(
-        `http://localhost:4000/api/users/createUser?accessToken=${access_token}`,
+        `http://localhost:4000/api/users/createUser?accessToken=${access_token}&refreshToken=${refresh_token}`,
         {
           method: "post",
           headers: { "Content-Type": "application/json" },
@@ -56,7 +49,7 @@ export default class Authorize extends React.Component<
       console.log("Getting old flames");
 
       await fetch(
-        `http://localhost:4000/api/music/forgotten?accessToken=${access_token}&uid=${user.id}`,
+        `http://localhost:4000/api/music/forgotten?&uid=${user.id}`,
         {
           method: "get",
           headers: {
@@ -67,11 +60,10 @@ export default class Authorize extends React.Component<
 
       window.setTimeout(() => {
         access_token = "";
-        Cookies.remove("accessToken");
         Cookies.remove("user");
       }, Number.parseInt(expires_in) * 1000);
       window.history.pushState("Access Token", "", "/");
-      if (Cookies.get("user") && Cookies.get("accessToken")) {
+      if (Cookies.get("user")) {
         window.location.reload();
       }
     }
