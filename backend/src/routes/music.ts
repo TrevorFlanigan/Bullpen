@@ -376,6 +376,10 @@ router.get("/discover", async (req, res) => {
   let jsonPromises = results.map(res => res.json());
   let jsons = await Promise.all(jsonPromises);
 
+  if (!jsons) {
+    return res.sendStatus(500);
+  }
+
   let { skipped, recentlyPlayed, oldFavoritePlaylist, discoverPlaylist } = user;
 
   let skippedIds = skipped.map(track => track.id);
