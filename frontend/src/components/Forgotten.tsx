@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 import SongCard from "./SongCard";
 import WithWidth, { isWidthDown, isWidthUp } from "@material-ui/core/withWidth";
 import { Breakpoint } from "@material-ui/core/styles/createBreakpoints";
-import { withTheme } from "@material-ui/core";
+import { withTheme, withStyles, Button } from "@material-ui/core";
 import Theme from "./Theme";
 interface IForgottenProps {
   width: Breakpoint;
@@ -14,7 +14,30 @@ interface IForgottenState {
   index: Number;
   index1: Number;
   index2: Number;
+  disabled: Boolean;
 }
+
+const BuildForMe = withStyles({
+  root: {
+    minWidth: "250px",
+    color: "#fff",
+    backgroundColor: "#e29670",
+    "&:hover": {
+      backgroundColor: "#e29670",
+    },
+    fontWeight: "bold",
+    fontSize: "14px",
+    lineHeight: 1,
+    borderRadius: "500px",
+    transitionProperty: "background-color, box-shadow, filter",
+    borderWidth: 0,
+    letterSpacing: "2px",
+    whiteSpace: "normal",
+    padding: "16px 14px 18px",
+    fontFamily: "Proxima Nova",
+    alignSelf: "center",
+  },
+})(Button)
 
 class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
   state = {
@@ -22,6 +45,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     index: 0,
     index1: 1,
     index2: 2,
+    disabled: false
   };
   async componentDidMount() {
     let items = this.getForgottenFromDB();
@@ -29,6 +53,32 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     let [tracks] = await Promise.all([items]);
     this.setState(() => ({ tracks: tracks }));
     console.log(this.state.tracks);
+  }
+  handleAddAll = async () => {
+    let user = JSON.parse(Cookies.get("user") as string);
+    let tracksToSend = this.state.tracks.slice(Math.min(this.state.index, this.state.index1, this.state.index2), this.state.tracks.length);
+
+    let idsToSend = tracksToSend.map((track: any) => track.id);
+    console.log(idsToSend);
+
+    let res = await fetch(`http://localhost:4000/api/music/forgotten?uid=${user.id}`, {
+      method: "put",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        tracks: idsToSend
+      })
+    });
+
+    if (res.ok) {
+      this.setState({
+        index: this.state.tracks.length,
+        index1: this.state.tracks.length,
+        index2: this.state.tracks.length,
+        disabled: true,
+      });
+    }
   }
 
   getForgottenFromDB = async () => {
@@ -50,8 +100,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
       console.log("Getting medium term instead");
 
       let res = await fetch(
-        `http://localhost:4000/api/music/forgotten?uid=${
-          user.id
+        `http://localhost:4000/api/music/forgotten?uid=${user.id
         }`,
         {
           method: "get",
@@ -69,7 +118,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     return json;
   };
 
-  incrementIndex = async (index: Number) => {
+  incrementIndex = (index: Number) => {
     let nextIndex =
       Math.max(this.state.index, this.state.index1, this.state.index2) + 1;
     if (index == 0) {
@@ -93,6 +142,8 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     let user = JSON.parse(Cookies.get("user") || "");
     if (!user.id) return;
     this.incrementIndex(index);
+    this.setState({ tracks: this.state.tracks.slice(index as number, this.state.tracks.length) })
+
 
     let res = await fetch(
       `http://localhost:4000/api/music/forgotten?uid=${user.id}`,
@@ -118,8 +169,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     this.incrementIndex(index);
 
     let res = await fetch(
-      `http://localhost:4000/api/music/addforgotten?uid=${
-        user.id
+      `http://localhost:4000/api/music/addforgotten?uid=${user.id
       }`,
       {
         method: "post",
@@ -144,7 +194,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     if (
       !this.state.tracks.length ||
       Math.min(this.state.index, this.state.index1, this.state.index2) >=
-        this.state.tracks.length
+      this.state.tracks.length
     )
       return (
         <section
@@ -162,6 +212,9 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
           style={{ justifyContent: "center", height: "100%" }}
         >
           <h1 style={{ margin: 0 }}>Your Old Flames</h1>
+          <span style={{ height: "auto", display: "flex", justifyContent: "center" }}>
+            <BuildForMe disabled={this.state.disabled} variant="contained" onClick={this.handleAddAll}>Add All {this.state.tracks.length - Math.min(this.state.index, this.state.index1, this.state.index2)} Songs</BuildForMe>
+          </span>
           <div
             style={{
               display: "flex",

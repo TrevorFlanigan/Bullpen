@@ -28,7 +28,6 @@ const router = express_1.default.Router();
  * @param uid user id for current user.
  */
 router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("forgotten getuser...");
     let { user, accessToken } = yield users_1.default(req, res);
     let skippedIds = user.skipped.map((element) => element.id);
     let alreadyAdded = user.oldFavoritePlaylist.map((track) => track.id);
@@ -90,7 +89,6 @@ router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, functio
             recentTrackIds.has(track.id) ||
             skippedIds.includes(track.id) ||
             alreadyAdded.includes(track.id)) {
-            console.log("removed track: " + track.name);
             longTracks.delete(track);
         }
     }
@@ -99,7 +97,6 @@ router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, functio
             recentTrackIds.has(track.id) ||
             skippedIds.includes(track.id) ||
             alreadyAdded.includes(track.id)) {
-            console.log("removed medium track: " + track.name);
             mediumTracks.delete(track);
         }
     }
@@ -135,8 +132,6 @@ router.get("/recent", (req, res) => __awaiter(void 0, void 0, void 0, function* 
             let promise = new Promise((res) => {
                 for (const track of recentJson.items) {
                     recentTracks.add(track.track);
-                    if (track.track.artists[0].name === "Jaden")
-                        console.log(track.track.name);
                 }
                 res();
             });
@@ -219,12 +214,12 @@ router.delete("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, func
  */
 router.get("/forgottenDB", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("get forgotten from DB");
-    // let { user } = await getUserAndRefreshToken(req, res);
-    let user = yield User_1.default.findOne({ id: req.query.uid });
-    if (!user) {
-        res.status(500).send({ error: "user not found" });
-        return;
-    }
+    let { user } = yield users_1.default(req, res);
+    // let user = await User.findOne({ id: req.query.uid });
+    // if (!user) {
+    //   res.status(500).send({ error: "user not found" });
+    //   return
+    // }
     res.status(200).json(user.oldFavorites);
 }));
 /**
@@ -270,5 +265,86 @@ router.post("/makePlaylist", (req, res) => __awaiter(void 0, void 0, void 0, fun
         return;
     }
     res.sendStatus(200);
+}));
+/**
+ * Query: @param uid user id
+ *        @param length does nothing atm. Should limit the length of the discover playlist
+ */
+router.get("/discover", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    let { user, accessToken } = yield users_1.default(req, res);
+    let unique = new Set();
+    user.shortHistory.forEach((track) => unique.add(track.id));
+    user.mediumHistory.forEach((track) => unique.add(track.id));
+    user.recentlyPlayed.forEach((track) => unique.add(track.id));
+    let seeds = Array.from(unique.values());
+    // let seeds = req.body.seed_tracks as string[];
+    let length = Number.parseInt(req.query.length);
+    if (!length) {
+        res.status(400).json({ error: "no length specified" });
+        return;
+    }
+    if (!(seeds === null || seeds === void 0 ? void 0 : seeds.length)) {
+        res.status(500).json({ error: "no seeds found" });
+        return;
+    }
+    let numRequests = Math.ceil(seeds.length / 5);
+    let limitPerRequest = 10 /* || Math.floor(length / numRequests)*/;
+    let promises = [];
+    let formatSeeds = (seeds, start, end) => {
+        let seedSubset = seeds.slice(start, end);
+        return seedSubset.join(",");
+    };
+    console.log(formatSeeds(seeds, 0, 5));
+    for (let i = 0; i < 50; i += 5) {
+        let requestUrl = `https://api.spotify.com/v1/recommendations?limit=${limitPerRequest}&seed_tracks=${formatSeeds(seeds, i, i + 5)}`;
+        let res = node_fetch_1.default(requestUrl, {
+            method: "get",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`
+            }
+        }).catch(e => { throw e; });
+        // if (!res.ok) throw new Error("something went wrong");
+        // let json = res.json();
+        promises.push(res);
+    }
+    let uniqueIds = new Set();
+    let uniqueSongs = new Set();
+    let results = yield Promise.all(promises);
+    let jsonPromises = results.map(res => res.json());
+    let jsons = yield Promise.all(jsonPromises);
+    jsons.forEach(object => {
+        object.tracks.forEach((track) => {
+            if (!uniqueIds.has(track.id)) {
+                uniqueIds.add(track.id);
+                uniqueSongs.add(track);
+            }
+        });
+    });
+    let final = Array.from(uniqueSongs.values());
+    res.status(200).json(final);
+}));
+/**
+ * Body: @param {String[]} tracks track ids to add to discover playlist
+ */
+router.put("/discover", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        let { user, accessToken } = yield users_1.default(req, res);
+        let discoverId = user.discoverPlaylistId;
+        let tracksToAdd = req.body.tracks;
+        let uniqueTracksToAdd = new Set(tracksToAdd);
+        let alreadyAdded = new Set();
+        user.discoverPlaylist.forEach((track) => {
+            alreadyAdded.add(track.id);
+            uniqueTracksToAdd.delete(track.id);
+        });
+        let toAddArray = Array.from(uniqueTracksToAdd.values());
+        console.log(toAddArray);
+        playlists_1.addToPlaylist(accessToken, discoverId, toAddArray);
+        res.sendStatus(200);
+    }
+    catch (e) {
+        res.sendStatus(500);
+    }
 }));
 exports.default = router;

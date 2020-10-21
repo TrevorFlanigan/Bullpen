@@ -7,6 +7,7 @@ interface ISongCardProps {
   track: any;
   heart: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
   remove: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
+  ref?: React.RefObject<any>
 }
 
 interface ISongCardState {
@@ -19,13 +20,38 @@ interface ISongCardState {
 export default class SongCard extends React.Component<
   ISongCardProps,
   ISongCardState
-> {
+  > {
   state = {
     translate: 0,
     color: "white",
     opacity: 1,
     disabled: false,
   };
+
+  removeAnimation = (e: any, fn?: Function) => {
+    this.setState({ color: "red", opacity: 0, disabled: true });
+    setTimeout(() => {
+      if (fn) fn();
+      this.setState({
+        color: "white",
+        opacity: 1,
+        disabled: false,
+      });
+    }, 500);
+  }
+
+  likeAnimation = (e: any, fn?: Function) => {
+    this.setState({ color: "green", opacity: 0, disabled: true });
+    setTimeout(() => {
+      if (fn) fn();
+      this.setState({
+        color: "white",
+        opacity: 1,
+        disabled: false,
+      });
+    }, 500);
+  }
+
   public render() {
     if (!this.props.track) return <div></div>;
     const HeartButton = withStyles({
@@ -42,7 +68,6 @@ export default class SongCard extends React.Component<
         },
       },
     })(IconButton);
-
     const RemoveButton = withStyles({
       root: {
         minWidth: "10px",
@@ -111,18 +136,9 @@ export default class SongCard extends React.Component<
         >
           <div>
             <RemoveButton
-              onClick={(e: any) => {
-                this.setState({ color: "red", opacity: 0, disabled: true });
-
-                setTimeout(() => {
-                  this.props.remove(this.props.track.id);
-                  this.setState({
-                    color: "white",
-                    opacity: 1,
-                    disabled: false,
-                  });
-                }, 500);
-              }}
+              onClick={(e) => this.removeAnimation(e,
+                () => this.props.remove(this.props.track.id)
+              )}
               disabled={this.state.disabled}
             >
               <Remove />
@@ -145,18 +161,9 @@ export default class SongCard extends React.Component<
           </p>
           <div>
             <HeartButton
-              onClick={(e: any) => {
-                this.setState({ color: "green", opacity: 0, disabled: true });
-
-                setTimeout(() => {
-                  this.props.heart(this.props.track.id);
-                  this.setState({
-                    color: "white",
-                    opacity: 1,
-                    disabled: false,
-                  });
-                }, 500);
-              }}
+              onClick={(e) => this.likeAnimation(e, () =>
+                this.props.remove(this.props.track.id)
+              )}
               disabled={this.state.disabled}
             >
               <Favorite />

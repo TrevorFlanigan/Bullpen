@@ -18,12 +18,10 @@ const getUserAndRefreshToken = async (req: any, res: any) => {
 
 
     let accessToken = user.access_token;
-    console.log("access Token: ");
-
-    console.log(accessToken);
-
     if (!(await testAccessToken(accessToken, req, res))) {
-        refreshAccessToken(user.id);
+        console.log("HAVE TO REFRESH TOKEN");
+
+        await refreshAccessToken(user.id);
     }
     return { user, accessToken };
 }

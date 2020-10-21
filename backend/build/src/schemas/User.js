@@ -35,6 +35,15 @@ const UserSchema = new mongoose_1.default.Schema({
     recentlyPlayed: {
         type: [Object],
     },
+    shortHistory: {
+        type: [Object],
+    },
+    mediumHistory: {
+        type: [Object],
+    },
+    longHistory: {
+        type: [Object],
+    },
     favoriteArtists: {
         type: [Object],
     },
@@ -57,6 +66,9 @@ const UserSchema = new mongoose_1.default.Schema({
     discoverPlaylistId: {
         type: String,
     },
+    discoverPlaylist: {
+        type: [Object],
+    },
     oldFavoritePlaylistName: {
         type: String,
         default: "Old Flames",
@@ -64,6 +76,15 @@ const UserSchema = new mongoose_1.default.Schema({
     oldFavoritePlaylistId: {
         type: String,
     },
+    access_token: {
+        type: String,
+    },
+    refresh_token: {
+        type: String,
+    },
+    known_tracks: {
+        type: [String]
+    }
 });
 const User = mongoose_1.default.model("User", UserSchema);
 exports.default = User;

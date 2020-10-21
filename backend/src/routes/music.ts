@@ -81,7 +81,7 @@ router.get("/forgotten", async (req, res) => {
 
   if (user) user.recentlyPlayed = Array.from(recentTracks);
   for (let track of recentTracks) {
-    console.log(track.name);
+    // console.log(track.name);
     recentTrackIds.add(track.id);
   }
 
@@ -259,17 +259,13 @@ router.get("/forgottenDB", async (req, res) => {
 /**
  * @param uid user id
  */
-router.post("/addforgotten", async (req, res) => {
-
-  console.log("addforgotten");
-
-
+router.put("/forgotten", async (req, res) => {
   let { user, accessToken } = await getUserAndRefreshToken(req, res);
 
-  let ids = req.body.toAdd || [];
+  let ids = new Set<string>(req.body.tracks);
 
   let oldFavoritesToAdd = user.oldFavorites.filter((track) =>
-    ids.includes(track.id)
+    ids.has(track.id)
   );
 
   let oldFavoritePlaylist = user.oldFavoritePlaylist || [];
@@ -319,17 +315,9 @@ router.post("/makePlaylist", async (req, res) => {
 
 /**
  * Query: @param uid user id
- * Body: 
- *      @param seed_genres: array of genres to seed discover (not in use),
- *      @param seed_tracks: array of tracks to seed 
- *      @param seed_artists: array of artists to seed (not in use)
+ *        @param length does nothing atm. Should limit the length of the discover playlist
  */
 router.get("/discover", async (req, res) => {
-  console.log("/discover");
-
-  console.log(req.query.uid);
-
-
   let { user, accessToken } = await getUserAndRefreshToken(req, res);
 
   let unique = new Set<any>();
@@ -383,18 +371,33 @@ router.get("/discover", async (req, res) => {
     promises.push(res);
   }
 
-  let uniqueIds = new Set<string>();
-  let uniqueSongs = new Set<any>();
 
   let results = await Promise.all(promises);
   let jsonPromises = results.map(res => res.json());
   let jsons = await Promise.all(jsonPromises);
+
+  let { skipped, recentlyPlayed, oldFavoritePlaylist, discoverPlaylist } = user;
+
+  let skippedIds = skipped.map(track => track.id);
+  let recentlyPlayedIds = recentlyPlayed.map(track => track.id);
+  let oldFavoritePlaylistIds = oldFavoritePlaylist.map(track => track.id);
+  let discoverPlaylistIds = discoverPlaylist;
+
+  let uniqueIds = new Set<string>([...skippedIds, ...recentlyPlayedIds, ...oldFavoritePlaylistIds, ...discoverPlaylistIds]);
+  let uniqueSongs = new Set<any>();
+
+  console.log("size");
+  console.log(uniqueIds.size);
+
 
   jsons.forEach(object => {
     object.tracks.forEach((track: any) => {
       if (!uniqueIds.has(track.id)) {
         uniqueIds.add(track.id);
         uniqueSongs.add(track);
+      }
+      else {
+        // console.log(`skipped a track: ${track.name}`);
       }
     })
   });
@@ -404,6 +407,38 @@ router.get("/discover", async (req, res) => {
 
 })
 
+/**
+ * Body: @param {String[]} tracks track ids to add to discover playlist
+ */
+router.put("/discover", async (req, res) => {
+  try {
+    let { user, accessToken } = await getUserAndRefreshToken(req, res);
+    let discoverId = user.discoverPlaylistId;
+    let tracksToAdd = req.body.tracks;
+    let uniqueTracksToAdd = new Set<string>(tracksToAdd);
+    let alreadyAdded = new Set<string>();
+    user.discoverPlaylist.forEach((track) => {
+      alreadyAdded.add(track);
+      uniqueTracksToAdd.delete(track);
+    });
+    let toAddArray: string[] = Array.from(uniqueTracksToAdd.values());
+
+
+    addToPlaylist(accessToken, discoverId, toAddArray);
+
+    let arr = user.discoverPlaylist;
+    arr = arr.concat(req.body.tracks);
+    let final = Array.from(new Set<any>(arr).values());
+
+    user.discoverPlaylist = final;
+
+    await user.save();
+    res.sendStatus(200);
+  }
+  catch (e) {
+    res.sendStatus(500);
+  }
+})
 
 
 export default router;

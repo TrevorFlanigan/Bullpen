@@ -17,11 +17,14 @@ interface IUser extends mongoose.Document {
   oldFavorites: any[];
   oldFavoritePlaylist: any[];
   discoverPlaylistName: string;
+  discoverPlaylist: any[];
   discoverPlaylistId: string;
   oldFavoritePlaylistName: string;
   oldFavoritePlaylistId: string;
   refresh_token: string;
   access_token: string;
+  known_tracks: string[];
+
 }
 const UserSchema = new mongoose.Schema({
   date: {
@@ -85,6 +88,9 @@ const UserSchema = new mongoose.Schema({
   discoverPlaylistId: {
     type: String,
   },
+  discoverPlaylist: {
+    type: [Object],
+  },
   oldFavoritePlaylistName: {
     type: String,
     default: "Old Flames",
@@ -97,6 +103,9 @@ const UserSchema = new mongoose.Schema({
   },
   refresh_token: {
     type: String,
+  },
+  known_tracks: {
+    type: [String]
   }
 });
 const User = mongoose.model<IUser>("User", UserSchema);

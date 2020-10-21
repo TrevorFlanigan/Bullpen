@@ -41,18 +41,26 @@ router.post("/createUser", (req, res) => __awaiter(void 0, void 0, void 0, funct
         console.log("user already exists");
         user.access_token = accessToken;
         user.refresh_token = refreshToken;
-        yield user.save();
         console.log(user.access_token);
+        let mediumTracks = yield tracks_1.getAllTracksFromTimeFrame(accessToken, "medium_term");
+        let shortTracks = yield tracks_1.getAllTracksFromTimeFrame(accessToken, "short_term");
+        let recentTracks = yield tracks_1.getAllRecentlyPlayed(accessToken);
+        let short = Array.from(shortTracks.values());
+        let medium = Array.from(mediumTracks.values());
+        let recent = Array.from(recentTracks.values());
+        user.recentlyPlayed = recent;
+        user.shortHistory = short;
+        user.mediumHistory = medium;
+        yield user.save();
         res.status(302).send("User already exists");
         return;
     }
     else {
         try {
             console.log("Creating new User");
-            console.log(req.query.accessToken);
             let newUser = new User_1.default({
                 access_token: req.query.accessToken,
-                refresh_token: req.query.refresh_token,
+                refresh_token: req.query.refreshToken,
                 display_name: body.display_name,
                 followers: body.followers,
                 href: body.href,
@@ -358,18 +366,8 @@ router.get("/artists", (req, res) => __awaiter(void 0, void 0, void 0, function*
  * @param {"discover | old"} playlist
  */
 router.get("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    let userID = req.query.uid;
+    let { user, accessToken } = yield users_1.default(req, res);
     let playlist = req.query.playlist;
-    let user = yield User_1.default.findOne({ id: userID });
-    const accessToken = req.query.accessToken;
-    if (!(yield testAccessToken_1.default(accessToken, req, res))) {
-        console.log("no accessToken");
-        return;
-    }
-    if (!user) {
-        res.sendStatus(404);
-        return;
-    }
     if (playlist == "old") {
         res.status(200).json({ name: user.oldFavoritePlaylistName });
         let response = yield node_fetch_1.default(`https://api.spotify.com/v1/playlists/${user.oldFavoritePlaylistId}?fields=name`, {

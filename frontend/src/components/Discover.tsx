@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Button, isWidthUp, TextField, withTheme, withWidth } from '@material-ui/core';
+import { Button, isWidthUp, TextField, withTheme, withWidth, withStyles } from '@material-ui/core';
 
 import Cookies from "js-cookie";
 import SongCard from "./SongCard"
@@ -14,7 +14,44 @@ interface IDiscoverPageState {
     index1: Number;
     index2: Number;
     size: Number;
+    disabled: boolean;
 }
+
+const BuildForMe = withStyles({
+    root: {
+        minWidth: "250px",
+        color: "#0",
+        backgroundColor: "#e29670",
+        "&:hover": {
+            backgroundColor: "#e29670",
+            filter: "brightness(.8)"
+        },
+        fontWeight: "bold",
+        fontSize: "14px",
+        lineHeight: 1,
+        borderRadius: "500px",
+        transitionProperty: "background-color, box-shadow, filter",
+        borderWidth: 0,
+        letterSpacing: "2px",
+        whiteSpace: "normal",
+        padding: "16px 14px 18px",
+        fontFamily: "Proxima Nova",
+        alignSelf: "center",
+        marginLeft: "5px",
+        marginRight: "5px"
+
+    },
+})(Button)
+
+const FromPlaylist = withStyles({
+    root: {
+        color: "black",
+        backgroundColor: "#70e296",
+        "&:hover": {
+            backgroundColor: "#70e296",
+        },
+    },
+})(BuildForMe)
 
 class DiscoverPage extends React.Component<IDiscoverPageProps, IDiscoverPageState> {
     state = {
@@ -22,14 +59,68 @@ class DiscoverPage extends React.Component<IDiscoverPageProps, IDiscoverPageStat
         index: 0,
         index1: 1,
         index2: 2,
-        size: 50
+        size: 50,
+        disabled: false,
     };
-    async componentDidMount() {
-        let items = this.getDiscover();
 
+    songRefs = React.createRef();
+    async componentDidMount() {
+        await this.refresh();
+    }
+
+    refresh = async () => {
+        this.setState(() => ({
+            tracks: [],
+            index: 0,
+            index1: 1,
+            index2: 2,
+            disabled: false
+        }));
+        let items = this.getDiscover();
         let [tracks] = await Promise.all([items]);
         this.setState(() => ({ tracks: tracks }));
-        console.log(this.state.tracks);
+
+        let repeated = new Set<any>();
+        let once = new Set<any>();
+        tracks.forEach((track: any) => {
+            if (!once.has(track.id)) {
+                console.log(track.id);
+                once.add(track.id);
+            }
+            else {
+                console.log(track);
+                repeated.add(track);
+            }
+        })
+        console.log(once.size);
+
+        console.log(Array.from(repeated.values()));
+
+    }
+
+    handleAddAll = async () => {
+        let user = JSON.parse(Cookies.get("user") as string);
+        let tracksToSend = this.state.tracks;
+        // let tracksToSend = this.state.tracks.slice(Math.min(this.state.index, this.state.index1, this.state.index2), this.state.tracks.length);
+        let idsToSend = tracksToSend.map((track: any) => track.uri);
+        let res = await fetch(`http://localhost:4000/api/music/discover?uid=${user.id}`, {
+            method: "put",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                tracks: idsToSend
+            })
+        });
+
+        if (res.ok) {
+            this.setState({
+                index: this.state.tracks.length,
+                index1: this.state.tracks.length,
+                index2: this.state.tracks.length,
+                disabled: true,
+            });
+        }
     }
 
     getDiscover = async () => {
@@ -44,6 +135,7 @@ class DiscoverPage extends React.Component<IDiscoverPageProps, IDiscoverPageStat
         let user = JSON.parse(Cookies.get("user") || "");
         if (!user.id) return;
         this.incrementIndex(index);
+        this.setState({ tracks: this.state.tracks.slice(index as number, this.state.tracks.length) })
 
         // let res = await fetch(
         //   `http://localhost:4000/api/music/forgotten?uid=${user.id}`,
@@ -88,7 +180,7 @@ class DiscoverPage extends React.Component<IDiscoverPageProps, IDiscoverPageStat
         // console.log("done heart");
     };
 
-    incrementIndex = async (index: Number) => {
+    incrementIndex = (index: Number) => {
         let nextIndex =
             Math.max(this.state.index, this.state.index1, this.state.index2) + 1;
         if (index == 0) {
@@ -123,20 +215,21 @@ class DiscoverPage extends React.Component<IDiscoverPageProps, IDiscoverPageStat
                     style={{ justifyContent: "space-between", height: "100%" }}
                 >
                     <h1 style={{ margin: 0 }}>Discover New Songs</h1>
+                    <span style={{ height: "auto", display: "flex", justifyContent: "center" }}>
+                        <BuildForMe variant="contained" onClick={this.refresh}>Refresh</BuildForMe>
+                    </span>
+
                     <p>We are looking for more songs to suggest! Come back later</p>
+
                 </section>
             );
         return (
             <section className="section static3 App-subtitle flexcolumn">
                 <h1 style={{ margin: 0 }}>Discover New Songs</h1>
                 <span style={{ height: "auto", display: "flex", justifyContent: "center" }}>
-
-                    <Button variant="contained" onClick={async () => {
-                        //   let user = JSON.parse(Cookies.get("user") as string);
-                        //   console.log(user.id);
-                        //  await fetch(`http://localhost:4000/api/music/discover?uid=${user.id}&length=50`); 
-                    }}>Build for me</Button>
-                    {/* <TextField label="Playlist Size" type="number" defaultValue={50} onChange={(e) => this.setState({ size: Number.parseInt(e.target.value) })} /> */}
+                    <BuildForMe disabled={this.state.disabled} variant="contained" onClick={this.handleAddAll}>Add All {this.state.tracks.length} Songs</BuildForMe>
+                    <span style={{ fontSize: "50px", marginLeft: "5px", marginRight: "5px", alignItems: "center" }}> or </span>
+                    <FromPlaylist disabled={this.state.disabled} variant="contained" onClick={(e) => { return }}>Make from playlist</FromPlaylist>
                 </span>
                 <div
                     style={{

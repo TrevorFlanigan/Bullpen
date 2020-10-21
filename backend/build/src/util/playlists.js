@@ -65,7 +65,7 @@ exports.addToPlaylist = addToPlaylist;
 const getAllFromNext = (accessToken, next, prevSet) => __awaiter(void 0, void 0, void 0, function* () {
     return new Promise((res, rej) => __awaiter(void 0, void 0, void 0, function* () {
         if (!next)
-            res(prevSet);
+            res(prevSet || new Set());
         let tracks = new Set(prevSet);
         let promises = [new Promise((res) => res())];
         while (next) {
