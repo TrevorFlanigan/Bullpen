@@ -17,7 +17,7 @@ app.get("/", (req, res) => res.send("Express + TypeScript Server"));
 app.use("/api/users", users);
 app.use("/api/music", music);
 
-const connectDB = async (url: string = "mongodb://localhost:27017/bullpen") => {
+const connectDB = async (url: string = process.env.MONGODB_URI as string) => {
   try {
     await mongoose.connect(url, {
       useNewUrlParser: true,
