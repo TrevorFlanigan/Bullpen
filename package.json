@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/TrevorFlanigan/Bullpen/issues"
   },
-  "homepage": "https://github.com/TrevorFlanigan/Bullpen#readme"
+  "homepage": "https://github.com/TrevorFlanigan/Bullpen#readme",
+  "dependencies": {
+    "concurrently": "^5.3.0"
+  }
 }
