@@ -1,6 +1,7 @@
 {
   "name": "spotify-map",
   "version": "1.0.0",
+  "engines": {"npm": "7.0.2", "node": "15.0.0"},
   "description": "Music Discovery Interface",
   "main": "\"\"",
   "scripts": {
