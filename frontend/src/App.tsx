@@ -20,9 +20,7 @@ function App() {
           <Route
             exact
             path="/"
-            component={
-              Cookies.get("user") ? AuthorizedApp : UnauthorizedApp
-            }
+            component={Cookies.get("user") ? AuthorizedApp : UnauthorizedApp}
           />
           <Route exact path="/authorize" component={Authorize} />
           <Route component={AuthorizedApp} />
