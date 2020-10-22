@@ -4,9 +4,9 @@ import Spotify from "../util/Spotify";
 import { withStyles } from "@material-ui/core";
 import Cookies from "js-cookie";
 import Colors from "./Colors";
-interface ILoginButtonProps {}
+interface ILoginButtonProps { }
 
-interface ILoginButtonState {}
+interface ILoginButtonState { }
 
 const SpotifyLoginButton = withStyles({
   root: {
@@ -31,7 +31,7 @@ const SpotifyLoginButton = withStyles({
 export default class LoginButton extends React.Component<
   ILoginButtonProps,
   ILoginButtonState
-> {
+  > {
   public render() {
     return (
       <SpotifyLoginButton
@@ -42,10 +42,10 @@ export default class LoginButton extends React.Component<
           //   window.location.reload();
           // }
 
-          let res = await fetch("http://localhost:4000/api/users/startToken");
+          let res = await fetch(`${process.env.REACT_APP_BACKEND_URI}/api/users/startToken`);
           // let json = await res.json();
           // console.log(json);
-          
+
           let redirect = (await res.json()).url;
           window.location.href = redirect;
         }}

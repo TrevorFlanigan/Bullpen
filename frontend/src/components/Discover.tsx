@@ -103,7 +103,7 @@ class DiscoverPage extends React.Component<IDiscoverPageProps, IDiscoverPageStat
         let tracksToSend = this.state.tracks;
         // let tracksToSend = this.state.tracks.slice(Math.min(this.state.index, this.state.index1, this.state.index2), this.state.tracks.length);
         let idsToSend = tracksToSend.map((track: any) => track.uri);
-        let res = await fetch(`http://localhost:4000/api/music/discover?uid=${user.id}`, {
+        let res = await fetch(`${process.env.REACT_APP_BACKEND_URI}/api/music/discover?uid=${user.id}`, {
             method: "put",
             headers: {
                 "Content-Type": "application/json"
@@ -125,7 +125,7 @@ class DiscoverPage extends React.Component<IDiscoverPageProps, IDiscoverPageStat
 
     getDiscover = async () => {
         let user = JSON.parse(Cookies.get("user") || "");
-        let res = await fetch(`http://localhost:4000/api/music/discover?uid=${user.id}&length=50`);
+        let res = await fetch(`${process.env.REACT_APP_BACKEND_URI}/api/music/discover?uid=${user.id}&length=50`);
         let json = await res.json();
         return json;
     }
@@ -138,7 +138,7 @@ class DiscoverPage extends React.Component<IDiscoverPageProps, IDiscoverPageStat
         this.setState({ tracks: this.state.tracks.slice(index as number, this.state.tracks.length) })
 
         // let res = await fetch(
-        //   `http://localhost:4000/api/music/forgotten?uid=${user.id}`,
+        //   `${process.env.REACT_APP_BACKEND_URI}/api/music/forgotten?uid=${user.id}`,
         //   {
         //     method: "delete",
         //     headers: {
@@ -161,7 +161,7 @@ class DiscoverPage extends React.Component<IDiscoverPageProps, IDiscoverPageStat
         this.incrementIndex(index);
 
         // let res = await fetch(
-        //   `http://localhost:4000/api/music/addforgotten?uid=${
+        //   `${process.env.REACT_APP_BACKEND_URI}/api/music/addforgotten?uid=${
         //     user.id
         //   }`,
         //   {

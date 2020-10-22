@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 import { Redirect } from "react-router";
 import { CircularProgress } from "@material-ui/core";
 import Spotify from "../util/Spotify";
-interface IAuthorizeProps {}
+interface IAuthorizeProps { }
 
 interface IAuthorizeState {
   redirect: Boolean;
@@ -12,7 +12,7 @@ interface IAuthorizeState {
 export default class Authorize extends React.Component<
   IAuthorizeProps,
   IAuthorizeState
-> {
+  > {
   state = {
     redirect: Cookies.get("user") ? true : false,
   };
@@ -24,14 +24,14 @@ export default class Authorize extends React.Component<
 
     if (!stateMatch || !codeMatch) return
 
-    let userInfoRes = await fetch(`http://localhost:4000/api/users/token?code=${codeMatch[1]}&state=${stateMatch[1]}`);    
+    let userInfoRes = await fetch(`${process.env.REACT_APP_BACKEND_URI}/api/users/token?code=${codeMatch[1]}&state=${stateMatch[1]}`);
     let userInfo = await userInfoRes.json();
-    let {access_token, expires_in, refresh_token} = userInfo;
+    let { access_token, expires_in, refresh_token } = userInfo;
     if (access_token && expires_in) {
       user = await Spotify.getUser(access_token);
 
       await fetch(
-        `http://localhost:4000/api/users/createUser?accessToken=${access_token}&refreshToken=${refresh_token}`,
+        `${process.env.REACT_APP_BACKEND_URI}/api/users/createUser?accessToken=${access_token}&refreshToken=${refresh_token}`,
         {
           method: "post",
           headers: { "Content-Type": "application/json" },
@@ -49,7 +49,7 @@ export default class Authorize extends React.Component<
       console.log("Getting old flames");
 
       await fetch(
-        `http://localhost:4000/api/music/forgotten?&uid=${user.id}`,
+        `${process.env.REACT_APP_BACKEND_URI}/api/music/forgotten?&uid=${user.id}`,
         {
           method: "get",
           headers: {

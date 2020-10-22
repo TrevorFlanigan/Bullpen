@@ -43,7 +43,7 @@ const SearchIcon = withStyles({
 export default class SettingsPage extends React.Component<
   ISettingsPageProps,
   ISettingsPageState
-> {
+  > {
   state = {
     discoverName: "",
     oldName: "",
@@ -62,7 +62,7 @@ export default class SettingsPage extends React.Component<
     which: string
   ) => {
     return fetch(
-      `http://localhost:4000/api/users/playlistName?uid=${id}&playlist=${which}&playlistName=${name}`,
+      `${process.env.REACT_APP_BACKEND_URI}/api/users/playlistName?uid=${id}&playlist=${which}&playlistName=${name}`,
       {
         method: "put",
         headers: {
@@ -92,12 +92,12 @@ export default class SettingsPage extends React.Component<
     let user = JSON.parse(Cookies.get("user") || "");
     let discover = await (
       await fetch(
-        `http://localhost:4000/api/users/playlistName?uid=${user.id}&playlist=discover`
+        `${process.env.REACT_APP_BACKEND_URI}/api/users/playlistName?uid=${user.id}&playlist=discover`
       )
     ).json();
     let old = await (
       await fetch(
-        `http://localhost:4000/api/users/playlistName?uid=${user.id}&playlist=old`
+        `${process.env.REACT_APP_BACKEND_URI}/api/users/playlistName?uid=${user.id}&playlist=old`
       )
     ).json();
     this.setState({
