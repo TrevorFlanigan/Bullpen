@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "prestart": "npm run build",
-    "start": "nodemon src/index.ts",
+    "dev": "nodemon src/index.ts",
+    "start": "node build/src/index.js",
     "lint": "eslint --ext ts .",
     "test": "jest"
   },
