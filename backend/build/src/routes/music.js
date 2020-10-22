@@ -78,7 +78,7 @@ router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, functio
     if (user)
         user.recentlyPlayed = Array.from(recentTracks);
     for (let track of recentTracks) {
-        console.log(track.name);
+        // console.log(track.name);
         recentTrackIds.add(track.id);
     }
     for (let track of shortTracks) {
@@ -225,11 +225,10 @@ router.get("/forgottenDB", (req, res) => __awaiter(void 0, void 0, void 0, funct
 /**
  * @param uid user id
  */
-router.post("/addforgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("addforgotten");
+router.put("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let { user, accessToken } = yield users_1.default(req, res);
-    let ids = req.body.toAdd || [];
-    let oldFavoritesToAdd = user.oldFavorites.filter((track) => ids.includes(track.id));
+    let ids = new Set(req.body.tracks);
+    let oldFavoritesToAdd = user.oldFavorites.filter((track) => ids.has(track.id));
     let oldFavoritePlaylist = user.oldFavoritePlaylist || [];
     let oldFavoritePlaylistIds = oldFavoritePlaylist.map((element) => element.id) || [];
     let final = oldFavoritesToAdd.filter((track) => {
@@ -308,16 +307,29 @@ router.get("/discover", (req, res) => __awaiter(void 0, void 0, void 0, function
         // let json = res.json();
         promises.push(res);
     }
-    let uniqueIds = new Set();
-    let uniqueSongs = new Set();
     let results = yield Promise.all(promises);
     let jsonPromises = results.map(res => res.json());
     let jsons = yield Promise.all(jsonPromises);
+    if (!jsons) {
+        return res.sendStatus(500);
+    }
+    let { skipped, recentlyPlayed, oldFavoritePlaylist, discoverPlaylist } = user;
+    let skippedIds = skipped.map(track => track.id);
+    let recentlyPlayedIds = recentlyPlayed.map(track => track.id);
+    let oldFavoritePlaylistIds = oldFavoritePlaylist.map(track => track.id);
+    let discoverPlaylistIds = discoverPlaylist;
+    let uniqueIds = new Set([...skippedIds, ...recentlyPlayedIds, ...oldFavoritePlaylistIds, ...discoverPlaylistIds]);
+    let uniqueSongs = new Set();
+    console.log("size");
+    console.log(uniqueIds.size);
     jsons.forEach(object => {
         object.tracks.forEach((track) => {
             if (!uniqueIds.has(track.id)) {
                 uniqueIds.add(track.id);
                 uniqueSongs.add(track);
+            }
+            else {
+                // console.log(`skipped a track: ${track.name}`);
             }
         });
     });
@@ -335,12 +347,16 @@ router.put("/discover", (req, res) => __awaiter(void 0, void 0, void 0, function
         let uniqueTracksToAdd = new Set(tracksToAdd);
         let alreadyAdded = new Set();
         user.discoverPlaylist.forEach((track) => {
-            alreadyAdded.add(track.id);
-            uniqueTracksToAdd.delete(track.id);
+            alreadyAdded.add(track);
+            uniqueTracksToAdd.delete(track);
         });
         let toAddArray = Array.from(uniqueTracksToAdd.values());
-        console.log(toAddArray);
         playlists_1.addToPlaylist(accessToken, discoverId, toAddArray);
+        let arr = user.discoverPlaylist;
+        arr = arr.concat(req.body.tracks);
+        let final = Array.from(new Set(arr).values());
+        user.discoverPlaylist = final;
+        yield user.save();
         res.sendStatus(200);
     }
     catch (e) {

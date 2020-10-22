@@ -19,14 +19,15 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const users_1 = __importDefault(require("./routes/users"));
 const music_1 = __importDefault(require("./routes/music"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
 dotenv_1.default.config();
 const app = express_1.default();
 app.use(cors_1.default());
 app.use(body_parser_1.default.json());
-app.get("/", (req, res) => res.send("Express + TypeScript Server"));
+// app.get("/", (req, res) => res.send("Express + TypeScript Server"));
 app.use("/api/users", users_1.default);
 app.use("/api/music", music_1.default);
-const connectDB = (url = "mongodb://localhost:27017/bullpen") => __awaiter(void 0, void 0, void 0, function* () {
+const connectDB = (url = process.env.MONGODB_URI) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield mongoose_1.default.connect(url, {
             useNewUrlParser: true,
@@ -47,4 +48,10 @@ if (process.env.NODE_ENV === "test")
 else {
     connectDB();
 }
+// if (process.env.NODE_ENV === "production") {
+app.use(express_1.default.static(path_1.default.resolve(__dirname, "..", "..", "frontend", 'build')));
+app.get('*', (req, res) => {
+    res.sendFile(path_1.default.resolve(__dirname, "..", "..", "frontend", 'build', 'index.html'));
+});
+// }
 exports.default = app;

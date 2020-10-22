@@ -2,7 +2,7 @@ import Cookies from "js-cookie";
 let accessToken: string;
 let expiresIn: string;
 const clientId = "ca1cbc4582c8437d9322b5098114f980";
-const redirectURI = "http://localhost:3000/authorize/";
+const redirectURI = "http://bullpen.trevorflanigan.com/authorize/";
 
 let Spotify = {
   //retrieves the user's access token from the Spotify API
