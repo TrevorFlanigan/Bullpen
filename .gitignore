@@ -12,6 +12,7 @@ node_modules
 backend/.env
 backend/build
 docker
+Dockerfile
 frontend/.env
 # misc
 .DS_Store
