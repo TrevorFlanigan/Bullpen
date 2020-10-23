@@ -12,7 +12,7 @@
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm start\" ",
     "start": "mv frontend/build ./backend/public && cd backend && npm install && npm start",
     "prestart": "npm install",
-    "deploy": "cd frontend && npm run build && git commit -am \"deploy\" && git push origin deploy"
+    "deploy": "cd frontend && npm run build && cd .. && mv frontend/build backend/public && git commit -am \"deploy\" && git push origin deploy"
   },
   "repository": {
     "type": "git",
