@@ -42,12 +42,12 @@ else {
 }
 
 if (process.env.NODE_ENV === "production") {
-  console.log(path.resolve(__dirname, "..", "..", "public"));
+  console.log(path.resolve(__dirname, "..", "public"));
 
-  app.use(express.static(path.resolve(__dirname, "..", "..", "public")));
+  app.use(express.static(path.resolve(__dirname, "..", "public")));
 
   app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "..", "..", "public", "index.html"));
+    res.sendFile(path.resolve(__dirname, "..", "public", "index.html"));
   });
 }
 export default app;

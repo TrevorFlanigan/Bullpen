@@ -11,7 +11,7 @@
     "build": "tsc",
     "prestart": "npm run build",
     "dev": "nodemon src/index.ts",
-    "start": "node build/src/index.js",
+    "start": "ts-node src/index.ts",
     "lint": "eslint --ext ts .",
     "test": "jest"
   },
