@@ -10,7 +10,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm start\" ",
-    "start": "mv frontend/build ./backend/public && cd backend && npm install && npm start",
+    "start": "cd backend && npm install && npm start",
     "prestart": "npm install",
     "deploy": "cd frontend && npm run build && cd .. && mv frontend/build backend/public && git commit -am \"deploy\" && git push origin deploy"
   },
