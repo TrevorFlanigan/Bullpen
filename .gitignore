@@ -10,10 +10,11 @@ node_modules
 # production
 /build
 backend/.env
-backend/build
+backend/public
 docker
 Dockerfile
 frontend/.env
+frontend/build
 # misc
 .DS_Store
 .env.local
