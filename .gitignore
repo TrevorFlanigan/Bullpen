@@ -5,6 +5,7 @@ docker
 
 #Backend
 backend/build
+backend/.env
 
 #Frontend
 frontend/.env
