@@ -10,7 +10,7 @@ node_modules
 # production
 /build
 backend/.env
-backend/build
+backend/public
 docker
 Dockerfile
 frontend/.env

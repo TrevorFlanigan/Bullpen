@@ -48,10 +48,11 @@ if (process.env.NODE_ENV === "test")
 else {
     connectDB();
 }
-// if (process.env.NODE_ENV === "production") {
-app.use(express_1.default.static(path_1.default.resolve(__dirname, "..", "..", "frontend", 'build')));
-app.get('*', (req, res) => {
-    res.sendFile(path_1.default.resolve(__dirname, "..", "..", "frontend", 'build', 'index.html'));
-});
-// }
+if (process.env.NODE_ENV === "production") {
+    console.log(path_1.default.resolve(__dirname, "..", "..", "public"));
+    app.use(express_1.default.static(path_1.default.resolve(__dirname, "..", "..", "public")));
+    app.get("*", (req, res) => {
+        res.sendFile(path_1.default.resolve(__dirname, "..", "..", "public", "index.html"));
+    });
+}
 exports.default = app;
