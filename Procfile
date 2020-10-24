@@ -1,0 +1,1 @@
+web:ts-node ./backend/src/index.ts
