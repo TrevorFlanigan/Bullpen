@@ -46,8 +46,10 @@ export default class LoginButton extends React.Component<
           // let json = await res.json();
           // console.log(json);
 
-          let redirect = (await res.json()).url;
-          window.location.href = redirect;
+          let json = await res.json();
+          console.log(json);
+
+          window.location.href = json.url;
         }}
       >
         Login

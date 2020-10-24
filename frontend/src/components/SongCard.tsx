@@ -86,10 +86,11 @@ export default class SongCard extends React.Component<
       <div
         style={{
           opacity: this.state.opacity,
-          // translate: `translateX(${this.state.translate})`,
           transition: "opacity 1s",
-          height: "60vmin",
-          aspectRatio: "1 / 1",
+          height: CSS.supports("aspect-ratio", "1 / 1") ? "60vh" : "400px",
+          width: CSS.supports("aspect-ratio") ? "" : "400px",
+          aspectRatio: "1 / 1 ",
+
           backgroundImage: `url(${this.props.track.album.images[0].url})`,
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
