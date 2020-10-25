@@ -9,7 +9,6 @@
   "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc",
-    "prestart": "npm run build",
     "dev": "nodemon src/index.ts",
     "start": "ts-node src/index.ts",
     "lint": "eslint --ext ts .",
