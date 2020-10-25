@@ -1,7 +1,7 @@
 const mapToSet = async (items: any[]) => {
-  let set = new Set();
+  let set = new Set<any>();
   if (!items) {
-    return new Set();
+    return new Set<any>();
   }
   items?.forEach((item: any) => {
     set.add(item.track || item);
