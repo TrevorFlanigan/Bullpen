@@ -11,7 +11,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm start\" ",
     "start": "cd backend && npm start",
-    "preinstall": "cd backend && npm install",
+    "heroku-prebuild": "cd backend && npm install",
     "deploy": " rm -rf backend/public && cd frontend && npm run build && cd .. && mv frontend/build backend/public && git commit -am \"deploy\" && git push origin deploy"
   },
   "repository": {
