@@ -13,7 +13,9 @@ const getUserAndRefreshToken = async (req: any, res: any) => {
     if (!user) {
         console.log("User not found error");
         res.status(404).json({ error: "User not found" });
-        throw new Error("User not found");
+        // throw new Error("User not found");
+        console.log("User not found");
+        return
     }
 
 

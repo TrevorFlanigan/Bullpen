@@ -22,7 +22,7 @@ const makePlaylist = async (accessToken: string, uid: string, name: string) => {
   } catch (e) {
     console.log(e);
 
-    throw e;
+    // throw e;
   }
 };
 const addToPlaylist = async (
@@ -57,7 +57,7 @@ const addToPlaylist = async (
   } catch (e) {
     console.log(e);
 
-    throw e;
+    // throw e;
   }
 };
 

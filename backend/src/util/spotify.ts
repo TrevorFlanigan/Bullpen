@@ -13,7 +13,9 @@ let refreshAccessToken = async (id: string) => {
 
     let user = await User.findOne({ id: id });
     if (!user) {
-        throw new Error("Provided user id not in database");
+        // throw new Error("Provided user id not in database");
+        console.log("Provided user id not in database");
+        return;
     }
 
     console.log("user found");
@@ -37,7 +39,9 @@ let refreshAccessToken = async (id: string) => {
         await user.save();
     }
     else {
-        throw new Error("Refresh Token Error");
+        // throw new Error("Refresh Token Error");
+        console.log("refresh token error");
+
     }
 
 
