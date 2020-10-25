@@ -331,6 +331,9 @@ router.get("/artists", async (req, res) => {
   console.log("artists");
 
   let { user, accessToken } = await getUserAndRefreshToken(req, res);
+  if (!user || !accessToken) {
+    return;
+  }
   let artists = new Set<any>();
 
   let longHistory = getLongHistoryArtists(accessToken);
@@ -420,6 +423,9 @@ router.get("/artists", async (req, res) => {
  */
 router.get("/playlistName", async (req, res) => {
   let { user, accessToken } = await getUserAndRefreshToken(req, res);
+  if (!user || !accessToken) {
+    return;
+  }
   let playlist = req.query.playlist;
   if (playlist == "old") {
     res.status(200).json({ name: user.oldFavoritePlaylistName });
@@ -473,6 +479,9 @@ router.put("/playlistName", async (req, res) => {
   console.log("playlistname");
 
   let { user, accessToken } = await getUserAndRefreshToken(req, res);
+  if (!user || !accessToken) {
+    return;
+  }
 
   if (!req.query.playlistName || !req.query.playlist) {
     console.log("No playlist or playlistname");

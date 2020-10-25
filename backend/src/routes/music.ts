@@ -11,9 +11,7 @@ import {
   mediumHistoryTracks,
 } from "../util/tracks";
 import { addToPlaylist, getAllFromNext } from "../util/playlists";
-import { refreshAccessToken } from "../util/spotify";
 import getUserAndRefreshToken from "../util/users";
-import { json } from "body-parser";
 const router = express.Router();
 
 /**
@@ -24,6 +22,12 @@ const router = express.Router();
  */
 router.get("/forgotten", async (req, res) => {
   let { user, accessToken } = await getUserAndRefreshToken(req, res);
+  if (!user || !accessToken) {
+    return;
+  }
+  if (!user || !accessToken) {
+    return;
+  }
 
   let skippedIds = user.skipped.map((element) => element.id);
   let alreadyAdded = user.oldFavoritePlaylist.map((track) => track.id);
@@ -136,6 +140,9 @@ router.get("/recent", async (req, res) => {
   console.log("Recent getuser");
 
   let { user, accessToken } = await getUserAndRefreshToken(req, res);
+  if (!user || !accessToken) {
+    return;
+  }
 
   let recentlyPlayed = recentlyPlayedTracks(accessToken);
   let [recentRes] = await Promise.all([recentlyPlayed]);
@@ -247,6 +254,9 @@ router.get("/forgottenDB", async (req, res) => {
   console.log("get forgotten from DB");
 
   let { user } = await getUserAndRefreshToken(req, res);
+  if (!user) {
+    return;
+  }
   // let user = await User.findOne({ id: req.query.uid });
   // if (!user) {
   //   res.status(500).send({ error: "user not found" });
@@ -261,6 +271,9 @@ router.get("/forgottenDB", async (req, res) => {
  */
 router.put("/forgotten", async (req, res) => {
   let { user, accessToken } = await getUserAndRefreshToken(req, res);
+  if (!user || !accessToken) {
+    return;
+  }
 
   let ids = new Set<string>(req.body.tracks);
 
@@ -319,6 +332,9 @@ router.post("/makePlaylist", async (req, res) => {
  */
 router.get("/discover", async (req, res) => {
   let { user, accessToken } = await getUserAndRefreshToken(req, res);
+  if (!user || !accessToken) {
+    return;
+  }
 
   let unique = new Set<any>();
   user.shortHistory.forEach((track) => unique.add(track.id));
@@ -417,6 +433,9 @@ router.get("/discover", async (req, res) => {
 router.put("/discover", async (req, res) => {
   try {
     let { user, accessToken } = await getUserAndRefreshToken(req, res);
+    if (!user || !accessToken) {
+      return;
+    }
     let discoverId = user.discoverPlaylistId;
     let tracksToAdd = req.body.tracks;
     let uniqueTracksToAdd = new Set<string>(tracksToAdd);
