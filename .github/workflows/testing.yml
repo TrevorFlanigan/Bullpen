@@ -1,0 +1,33 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Deploy Branch Preview (App)
+
+# Controls when the action will run.
+on: [pull_request]
+defaults:
+  run:
+    working-directory: frontend
+jobs:
+  deploy_branch_preview:
+    name: Deploy Branch Preview
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 15.x
+      - name: Cache Node Modules
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Install Packages
+        run: npm install
+      - name: Build Project
+        run: npm run build
