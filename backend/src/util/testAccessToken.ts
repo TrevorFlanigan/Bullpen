@@ -11,7 +11,6 @@ const testAccessToken = async (accessToken: string, req: any, res: any) => {
 
   let json = await response.json();
   if (json.error?.status === 401) {
-    // res.status(401).json({ error: "Expired access token" });
     return false;
   }
   return true;

@@ -42,7 +42,7 @@ export default class LoginButton extends React.Component<
           //   window.location.reload();
           // }
 
-          let res = await fetch(`${process.env.REACT_APP_BACKEND_URI}/api/users/startToken`);
+          let res = await fetch(`/api/users/startToken`);
           // let json = await res.json();
           // console.log(json);
 

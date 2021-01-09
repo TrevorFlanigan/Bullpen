@@ -25,7 +25,9 @@ let refreshAccessToken = (id) => __awaiter(void 0, void 0, void 0, function* () 
     let b64 = Buffer.from(`${process.env.CLIENT_ID}:${process.env.CLIENT_SECRET}`).toString("base64");
     let user = yield User_1.default.findOne({ id: id });
     if (!user) {
-        throw new Error("Provided user id not in database");
+        // throw new Error("Provided user id not in database");
+        console.log("Provided user id not in database");
+        return;
     }
     console.log("user found");
     const refresh_token = user.refresh_token;
@@ -44,7 +46,8 @@ let refreshAccessToken = (id) => __awaiter(void 0, void 0, void 0, function* () 
         yield user.save();
     }
     else {
-        throw new Error("Refresh Token Error");
+        // throw new Error("Refresh Token Error");
+        console.log("refresh token error");
     }
 });
 exports.refreshAccessToken = refreshAccessToken;

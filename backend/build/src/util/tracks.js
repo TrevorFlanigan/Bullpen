@@ -68,7 +68,9 @@ const getAllTracksFromTimeFrame = (accessToken, timeFrame) => __awaiter(void 0, 
         return allTracks;
     }
     else {
-        throw new Error("Failed to get tracks from time frame");
+        // throw new Error("Failed to get tracks from time frame")
+        console.log("Failed to get tracks from time frame");
+        return new Set();
     }
 });
 exports.getAllTracksFromTimeFrame = getAllTracksFromTimeFrame;
@@ -88,7 +90,9 @@ const getAllRecentlyPlayed = (accessToken) => __awaiter(void 0, void 0, void 0, 
         return allTracks;
     }
     else {
-        throw new Error("Failed to get all recent tracks");
+        // throw new Error("Failed to get all recent tracks");
+        console.log("Failed to get tracks from time frame");
+        return new Set();
     }
 });
 exports.getAllRecentlyPlayed = getAllRecentlyPlayed;

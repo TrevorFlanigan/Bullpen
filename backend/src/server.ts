@@ -4,6 +4,8 @@ import cors from "cors";
 import mongoose from "mongoose";
 import users from "./routes/users";
 import music from "./routes/music";
+import playlists from "./routes/playlists";
+
 import dotenv from "dotenv";
 import path from "path";
 
@@ -13,8 +15,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// app.get("/", (req, res) => res.send("Express + TypeScript Server"));
-
+app.use("/api/playlists", playlists);
 app.use("/api/users", users);
 app.use("/api/music", music);
 
@@ -28,6 +29,7 @@ const connectDB = async (url: string = process.env.MONGODB_URI as string) => {
     });
 
     console.log("MongoDB Connected...");
+    console.log(process.env.NODE_ENV);
   } catch (err) {
     console.error(err.message);
     // Exit process with failure
@@ -35,11 +37,7 @@ const connectDB = async (url: string = process.env.MONGODB_URI as string) => {
   }
 };
 
-if (process.env.NODE_ENV === "test")
-  connectDB("mongodb://localhost:27017/bullpen-test");
-else {
-  connectDB();
-}
+connectDB();
 
 if (process.env.NODE_ENV === "production") {
   console.log(path.resolve(__dirname, "..", "public"));

@@ -68,7 +68,6 @@ const getAllTracksFromTimeFrame = async (accessToken: string, timeFrame: "long_t
     return allTracks;
   }
   else {
-    // throw new Error("Failed to get tracks from time frame")
     console.log("Failed to get tracks from time frame");
     return new Set<any>();
   }
@@ -97,7 +96,6 @@ const getAllRecentlyPlayed = async (accessToken: string): Promise<Set<any>> => {
     return allTracks;
   }
   else {
-    // throw new Error("Failed to get all recent tracks");
     console.log("Failed to get tracks from time frame");
     return new Set<any>();
   }

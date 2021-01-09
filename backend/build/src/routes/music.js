@@ -29,6 +29,12 @@ const router = express_1.default.Router();
  */
 router.get("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let { user, accessToken } = yield users_1.default(req, res);
+    if (!user || !accessToken) {
+        return;
+    }
+    if (!user || !accessToken) {
+        return;
+    }
     let skippedIds = user.skipped.map((element) => element.id);
     let alreadyAdded = user.oldFavoritePlaylist.map((track) => track.id);
     let recentTrackIds = new Set();
@@ -121,6 +127,9 @@ router.get("/test", (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 router.get("/recent", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("Recent getuser");
     let { user, accessToken } = yield users_1.default(req, res);
+    if (!user || !accessToken) {
+        return;
+    }
     let recentlyPlayed = tracks_1.recentlyPlayedTracks(accessToken);
     let [recentRes] = yield Promise.all([recentlyPlayed]);
     let [recentJson] = yield Promise.all([recentRes.json()]);
@@ -215,6 +224,9 @@ router.delete("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, func
 router.get("/forgottenDB", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("get forgotten from DB");
     let { user } = yield users_1.default(req, res);
+    if (!user) {
+        return;
+    }
     // let user = await User.findOne({ id: req.query.uid });
     // if (!user) {
     //   res.status(500).send({ error: "user not found" });
@@ -227,6 +239,9 @@ router.get("/forgottenDB", (req, res) => __awaiter(void 0, void 0, void 0, funct
  */
 router.put("/forgotten", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let { user, accessToken } = yield users_1.default(req, res);
+    if (!user || !accessToken) {
+        return;
+    }
     let ids = new Set(req.body.tracks);
     let oldFavoritesToAdd = user.oldFavorites.filter((track) => ids.has(track.id));
     let oldFavoritePlaylist = user.oldFavoritePlaylist || [];
@@ -271,6 +286,9 @@ router.post("/makePlaylist", (req, res) => __awaiter(void 0, void 0, void 0, fun
  */
 router.get("/discover", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let { user, accessToken } = yield users_1.default(req, res);
+    if (!user || !accessToken) {
+        return;
+    }
     let unique = new Set();
     user.shortHistory.forEach((track) => unique.add(track.id));
     user.mediumHistory.forEach((track) => unique.add(track.id));
@@ -342,6 +360,9 @@ router.get("/discover", (req, res) => __awaiter(void 0, void 0, void 0, function
 router.put("/discover", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         let { user, accessToken } = yield users_1.default(req, res);
+        if (!user || !accessToken) {
+            return;
+        }
         let discoverId = user.discoverPlaylistId;
         let tracksToAdd = req.body.tracks;
         let uniqueTracksToAdd = new Set(tracksToAdd);

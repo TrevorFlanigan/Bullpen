@@ -93,4 +93,21 @@ const getAllFromNext = async (
     res(tracks);
   });
 };
-export { makePlaylist, addToPlaylist, getAllFromNext };
+
+const getAllPlaylists = (
+  accessToken: string,
+  offset: number = 0,
+  limit: number = 20
+) => {
+  return fetch(
+    `https://api.spotify.com/v1/me/playlists?offset=${offset}&limit=${limit}`,
+    {
+      method: "get",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+};
+export { makePlaylist, addToPlaylist, getAllFromNext, getAllPlaylists };

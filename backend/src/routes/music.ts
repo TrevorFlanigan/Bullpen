@@ -25,9 +25,6 @@ router.get("/forgotten", async (req, res) => {
   if (!user || !accessToken) {
     return;
   }
-  if (!user || !accessToken) {
-    return;
-  }
 
   let skippedIds = user.skipped.map((element) => element.id);
   let alreadyAdded = user.oldFavoritePlaylist.map((track) => track.id);
@@ -85,7 +82,6 @@ router.get("/forgotten", async (req, res) => {
 
   if (user) user.recentlyPlayed = Array.from(recentTracks);
   for (let track of recentTracks) {
-    // console.log(track.name);
     recentTrackIds.add(track.id);
   }
 
@@ -257,11 +253,6 @@ router.get("/forgottenDB", async (req, res) => {
   if (!user) {
     return;
   }
-  // let user = await User.findOne({ id: req.query.uid });
-  // if (!user) {
-  //   res.status(500).send({ error: "user not found" });
-  //   return
-  // }
 
   res.status(200).json(user.oldFavorites);
 });
@@ -341,7 +332,6 @@ router.get("/discover", async (req, res) => {
   user.mediumHistory.forEach((track) => unique.add(track.id));
   user.recentlyPlayed.forEach((track) => unique.add(track.id));
   let seeds = Array.from(unique.values());
-  // let seeds = req.body.seed_tracks as string[];
   let length = Number.parseInt(req.query.length as string);
 
   if (!length) {
@@ -382,8 +372,6 @@ router.get("/discover", async (req, res) => {
       }
     }).catch(e => { throw e });
 
-    // if (!res.ok) throw new Error("something went wrong");
-    // let json = res.json();
     promises.push(res);
   }
 
@@ -411,6 +399,7 @@ router.get("/discover", async (req, res) => {
 
 
   jsons.forEach(object => {
+    if (!object.tracks) return;
     object.tracks.forEach((track: any) => {
       if (!uniqueIds.has(track.id)) {
         uniqueIds.add(track.id);

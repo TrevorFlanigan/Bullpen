@@ -25,7 +25,9 @@ const getUserAndRefreshToken = (req, res) => __awaiter(void 0, void 0, void 0, f
     if (!user) {
         console.log("User not found error");
         res.status(404).json({ error: "User not found" });
-        throw new Error("User not found");
+        // throw new Error("User not found");
+        console.log("User not found");
+        return { user: null, accessToken: null };
     }
     let accessToken = user.access_token;
     if (!(yield testAccessToken_1.default(accessToken, req, res))) {

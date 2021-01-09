@@ -61,7 +61,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     let idsToSend = tracksToSend.map((track: any) => track.id);
     console.log(idsToSend);
 
-    let res = await fetch(`${process.env.REACT_APP_BACKEND_URI}/api/music/forgotten?uid=${user.id}`, {
+    let res = await fetch(`/api/music/forgotten?uid=${user.id}`, {
       method: "put",
       headers: {
         "Content-Type": "application/json"
@@ -84,7 +84,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
   getForgottenFromDB = async () => {
     let user = JSON.parse(Cookies.get("user") || "");
     let res = await fetch(
-      `${process.env.REACT_APP_BACKEND_URI}/api/music/forgottenDB?uid=${user.id}`,
+      `/api/music/forgottenDB?uid=${user.id}`,
       {
         method: "get",
         headers: {
@@ -100,7 +100,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
       console.log("Getting medium term instead");
 
       let res = await fetch(
-        `${process.env.REACT_APP_BACKEND_URI}/api/music/forgotten?uid=${user.id
+        `/api/music/forgotten?uid=${user.id
         }`,
         {
           method: "get",
@@ -146,7 +146,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
 
 
     let res = await fetch(
-      `${process.env.REACT_APP_BACKEND_URI}/api/music/forgotten?uid=${user.id}`,
+      `/api/music/forgotten?uid=${user.id}`,
       {
         method: "delete",
         headers: {
@@ -169,7 +169,7 @@ class Forgotten extends React.Component<IForgottenProps, IForgottenState> {
     this.incrementIndex(index);
 
     let res = await fetch(
-      `${process.env.REACT_APP_BACKEND_URI}/api/music/addforgotten?uid=${user.id
+      `/api/music/addforgotten?uid=${user.id
       }`,
       {
         method: "post",

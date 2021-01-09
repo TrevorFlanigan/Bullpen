@@ -24,14 +24,14 @@ export default class Authorize extends React.Component<
 
     if (!stateMatch || !codeMatch) return
 
-    let userInfoRes = await fetch(`${process.env.REACT_APP_BACKEND_URI}/api/users/token?code=${codeMatch[1]}&state=${stateMatch[1]}`);
+    let userInfoRes = await fetch(`/api/users/token?code=${codeMatch[1]}&state=${stateMatch[1]}`);
     let userInfo = await userInfoRes.json();
     let { access_token, expires_in, refresh_token } = userInfo;
     if (access_token && expires_in) {
       user = await Spotify.getUser(access_token);
 
       await fetch(
-        `${process.env.REACT_APP_BACKEND_URI}/api/users/createUser?accessToken=${access_token}&refreshToken=${refresh_token}`,
+        `/api/users/createUser?accessToken=${access_token}&refreshToken=${refresh_token}`,
         {
           method: "post",
           headers: { "Content-Type": "application/json" },
@@ -49,7 +49,7 @@ export default class Authorize extends React.Component<
       console.log("Getting old flames");
 
       await fetch(
-        `${process.env.REACT_APP_BACKEND_URI}/api/music/forgotten?&uid=${user.id}`,
+        `/api/music/forgotten?&uid=${user.id}`,
         {
           method: "get",
           headers: {

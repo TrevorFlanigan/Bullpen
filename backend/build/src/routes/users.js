@@ -292,6 +292,9 @@ router.post("/createUser", (req, res) => __awaiter(void 0, void 0, void 0, funct
 router.get("/artists", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("artists");
     let { user, accessToken } = yield users_1.default(req, res);
+    if (!user || !accessToken) {
+        return;
+    }
     let artists = new Set();
     let longHistory = artists_1.getLongHistoryArtists(accessToken);
     let shortHistory = artists_1.getShortHistoryArtists(accessToken);
@@ -367,6 +370,9 @@ router.get("/artists", (req, res) => __awaiter(void 0, void 0, void 0, function*
  */
 router.get("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let { user, accessToken } = yield users_1.default(req, res);
+    if (!user || !accessToken) {
+        return;
+    }
     let playlist = req.query.playlist;
     if (playlist == "old") {
         res.status(200).json({ name: user.oldFavoritePlaylistName });
@@ -412,6 +418,9 @@ router.get("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, func
 router.put("/playlistName", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     console.log("playlistname");
     let { user, accessToken } = yield users_1.default(req, res);
+    if (!user || !accessToken) {
+        return;
+    }
     if (!req.query.playlistName || !req.query.playlist) {
         console.log("No playlist or playlistname");
         res.sendStatus(400);

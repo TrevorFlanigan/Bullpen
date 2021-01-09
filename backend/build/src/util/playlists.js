@@ -33,7 +33,7 @@ const makePlaylist = (accessToken, uid, name) => __awaiter(void 0, void 0, void 
     }
     catch (e) {
         console.log(e);
-        throw e;
+        // throw e;
     }
 });
 exports.makePlaylist = makePlaylist;
@@ -58,7 +58,7 @@ const addToPlaylist = (accessToken, playlist_id, trackUris) => __awaiter(void 0,
     }
     catch (e) {
         console.log(e);
-        throw e;
+        // throw e;
     }
 });
 exports.addToPlaylist = addToPlaylist;

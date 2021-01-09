@@ -11,6 +11,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const mapToSet = (items) => __awaiter(void 0, void 0, void 0, function* () {
     let set = new Set();
+    if (!items) {
+        return new Set();
+    }
     items === null || items === void 0 ? void 0 : items.forEach((item) => {
         set.add(item.track || item);
     });

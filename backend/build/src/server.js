@@ -36,6 +36,7 @@ const connectDB = (url = process.env.MONGODB_URI) => __awaiter(void 0, void 0, v
             useUnifiedTopology: true,
         });
         console.log("MongoDB Connected...");
+        console.log(process.env.NODE_ENV);
     }
     catch (err) {
         console.error(err.message);
@@ -43,11 +44,13 @@ const connectDB = (url = process.env.MONGODB_URI) => __awaiter(void 0, void 0, v
         process.exit(1);
     }
 });
-if (process.env.NODE_ENV === "test")
-    connectDB("mongodb://localhost:27017/bullpen-test");
-else {
-    connectDB();
-}
+// if (process.env.NODE_ENV === "test"){
+//   console.log("Connected to Test DB")
+//   connectDB("mongodb://localhost:27017/bullpen-test");
+// }
+// else {
+connectDB();
+// }
 if (process.env.NODE_ENV === "production") {
     console.log(path_1.default.resolve(__dirname, "..", "public"));
     app.use(express_1.default.static(path_1.default.resolve(__dirname, "..", "public")));
