@@ -8,12 +8,15 @@ import playlists from "./routes/playlists";
 
 import dotenv from "dotenv";
 import path from "path";
+import sslRedirect from "heroku-ssl-redirect";
 
 dotenv.config();
 const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(sslRedirect());
+
 
 app.use("/api/playlists", playlists);
 app.use("/api/users", users);
